@@ -18,7 +18,7 @@ import 'package:snapsync/domain/repositories/reachability_probe.dart';
 ///   otherwise it is unanswered or slow.
 class MockReachabilityProbe implements ReachabilityProbe {
   MockReachabilityProbe(this.config, {Random? random})
-      : _random = random ?? Random();
+    : _random = random ?? Random();
 
   final MockUploadConfig config;
   final Random _random;
@@ -31,8 +31,9 @@ class MockReachabilityProbe implements ReachabilityProbe {
       MockUploadMode.alwaysNoInternet => const ProbeResult.unreachable(),
       MockUploadMode.alwaysSuccess ||
       MockUploadMode.alwaysServerError ||
-      MockUploadMode.alwaysLowBandwidth =>
-        ProbeResult.reachable(config.fastProbeLatency),
+      MockUploadMode.alwaysLowBandwidth => ProbeResult.reachable(
+        config.fastProbeLatency,
+      ),
       MockUploadMode.flaky => _flaky(),
     };
   }

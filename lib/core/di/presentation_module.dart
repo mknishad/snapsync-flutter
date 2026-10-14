@@ -8,7 +8,14 @@ void registerPresentationModule(GetIt getIt) {
   if (getIt.isRegistered<CameraCubit>()) return;
 
   getIt
-    ..registerFactory<CameraCubit>(CameraCubit.new)
+    ..registerFactory<CameraCubit>(
+      () => CameraCubit(
+        service: getIt(),
+        permissions: getIt(),
+        addCapturedImage: getIt(),
+        now: utcNow,
+      ),
+    )
     ..registerFactory<BatchCubit>(
       () => BatchCubit(
         repository: getIt(),

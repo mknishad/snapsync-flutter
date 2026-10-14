@@ -28,8 +28,9 @@ class _SyncMessageListenerState extends State<SyncMessageListener> {
         ..showSnackBar(
           SnackBar(
             content: Text(message.text),
-            backgroundColor:
-                message.isError ? Theme.of(context).colorScheme.error : null,
+            backgroundColor: message.isError
+                ? Theme.of(context).colorScheme.error
+                : null,
           ),
         );
     });

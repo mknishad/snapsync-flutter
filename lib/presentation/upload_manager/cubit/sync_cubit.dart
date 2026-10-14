@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:snapsync/core/constants/app_constants.dart';
 import 'package:snapsync/core/error/failure.dart';
@@ -35,8 +36,8 @@ class SyncCubit extends Cubit<SyncState> {
     required this._now,
     this.maxAttempts = AppConstants.maxUploadRetries,
     TimerFactory? timerFactory,
-  })  : _timer = timerFactory ?? realTimer,
-        super(const SyncState());
+  }) : _timer = timerFactory ?? realTimer,
+       super(const SyncState());
 
   final BatchRepository repository;
   final SyncEngine engine;
@@ -71,9 +72,9 @@ class SyncCubit extends Cubit<SyncState> {
       _report(failure);
     }
     _batchesSub = repository.watchSubmittedBatches().listen(
-          _onBatches,
-          onError: (Object error) => _reportError(error),
-        );
+      _onBatches,
+      onError: (Object error) => _reportError(error),
+    );
     _progressSub = engine.progress.listen(_onProgress);
     _linkSub = connectivity.onLinkQualityChanged.listen(_onLinkQuality);
   }
@@ -124,7 +125,10 @@ class SyncCubit extends Cubit<SyncState> {
       _report(failure);
     } on IllegalBatchStateError {
       _messages.add(
-        const SyncMessage('Cannot remove an image while it uploads', isError: true),
+        const SyncMessage(
+          'Cannot remove an image while it uploads',
+          isError: true,
+        ),
       );
     }
   }
@@ -179,7 +183,8 @@ class SyncCubit extends Cubit<SyncState> {
     var found = false;
     for (final batch in batches) {
       for (final image in batch.images) {
-        final waiting = image.status == UploadStatus.queued ||
+        final waiting =
+            image.status == UploadStatus.queued ||
             image.status == UploadStatus.waitingForConnection;
         if (waiting && _seenQueued.add(image.id)) found = true;
       }
@@ -323,7 +328,8 @@ class SyncCubit extends Cubit<SyncState> {
   String _userMessage(Failure failure) {
     return switch (failure) {
       DatabaseFailure() => 'Could not access local data',
-      StorageFailure() || FileMissingFailure() => 'Could not access a stored photo',
+      StorageFailure() ||
+      FileMissingFailure() => 'Could not access a stored photo',
       _ => failure.message,
     };
   }

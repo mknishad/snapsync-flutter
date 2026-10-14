@@ -46,16 +46,16 @@ class CapturedImageModel {
   final int? uploadedAtMillis;
 
   DbRow toMap() => {
-        DatabaseSchema.colId: id,
-        DatabaseSchema.colBatchId: batchId,
-        DatabaseSchema.colFilePath: filePath,
-        DatabaseSchema.colFileSizeBytes: fileSizeBytes,
-        DatabaseSchema.colCapturedAt: capturedAtMillis,
-        DatabaseSchema.colStatus: status,
-        DatabaseSchema.colAttemptCount: attemptCount,
-        DatabaseSchema.colLastError: lastError,
-        DatabaseSchema.colNextRetryAt: nextRetryAtMillis,
-        DatabaseSchema.colUploadedAt: uploadedAtMillis,
-        DatabaseSchema.colUpdatedAt: updatedAtMillis,
-      };
+    DatabaseSchema.colId: id,
+    DatabaseSchema.colBatchId: batchId,
+    DatabaseSchema.colFilePath: filePath,
+    DatabaseSchema.colFileSizeBytes: fileSizeBytes,
+    DatabaseSchema.colCapturedAt: capturedAtMillis,
+    DatabaseSchema.colStatus: status,
+    DatabaseSchema.colAttemptCount: attemptCount,
+    DatabaseSchema.colLastError: lastError,
+    DatabaseSchema.colNextRetryAt: nextRetryAtMillis,
+    DatabaseSchema.colUploadedAt: uploadedAtMillis,
+    DatabaseSchema.colUpdatedAt: updatedAtMillis,
+  };
 }

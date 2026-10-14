@@ -69,17 +69,19 @@ void main() {
       expect(await runner.run(TaskNames.oneOffSyncTask), isFalse);
     });
 
-    test('paused by the user: finished, resuming schedules a new run',
-        () async {
-      passReturns(
-        const SyncPassResult(
-          outcome: SyncPassOutcome.pausedByUser,
-          remaining: 4,
-        ),
-      );
+    test(
+      'paused by the user: finished, resuming schedules a new run',
+      () async {
+        passReturns(
+          const SyncPassResult(
+            outcome: SyncPassOutcome.pausedByUser,
+            remaining: 4,
+          ),
+        );
 
-      expect(await runner.run(TaskNames.oneOffSyncTask), isTrue);
-    });
+        expect(await runner.run(TaskNames.oneOffSyncTask), isTrue);
+      },
+    );
   });
 
   group('errors never escape the handler', () {
@@ -89,15 +91,18 @@ void main() {
       expect(await runner.run(TaskNames.oneOffSyncTask), isFalse);
     });
 
-    test('an unexpected exception asks for a retry instead of killing the task',
-        () async {
-      when(() => engine.runPass()).thenThrow(StateError('boom'));
+    test(
+      'an unexpected exception asks for a retry instead of killing the task',
+      () async {
+        when(() => engine.runPass()).thenThrow(StateError('boom'));
 
-      expect(await runner.run(TaskNames.oneOffSyncTask), isFalse);
-    });
+        expect(await runner.run(TaskNames.oneOffSyncTask), isFalse);
+      },
+    );
 
     test('an asynchronous error is handled the same way', () async {
-      when(() => engine.runPass()).thenAnswer((_) async => throw Exception('x'));
+      when(() => engine.runPass())
+          .thenAnswer((_) async => throw Exception('x'));
 
       expect(await runner.run(TaskNames.periodicSyncTask), isFalse);
     });
@@ -118,7 +123,8 @@ void main() {
     });
 
     test('swallows (and logs) a failure while releasing', () async {
-      when(() => engine.cancelPass()).thenThrow(const DatabaseFailure('locked'));
+      when(() => engine.cancelPass())
+          .thenThrow(const DatabaseFailure('locked'));
 
       await runner.onStopped();
     });

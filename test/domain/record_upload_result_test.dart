@@ -19,14 +19,14 @@ void main() {
   late RecordUploadResult useCase;
 
   CapturedImage uploading({int attempts = 0}) => CapturedImage(
-        id: 'img-1',
-        batchId: 'b',
-        filePath: '/fake/img-1.jpg',
-        fileSizeBytes: 10,
-        capturedAt: DateTime.utc(2026, 3, 1),
-        status: UploadStatus.uploading,
-        attemptCount: attempts,
-      );
+    id: 'img-1',
+    batchId: 'b',
+    filePath: '/fake/img-1.jpg',
+    fileSizeBytes: 10,
+    capturedAt: DateTime.utc(2026, 3, 1),
+    status: UploadStatus.uploading,
+    attemptCount: attempts,
+  );
 
   Future<void> stubUpdate() async {}
 
@@ -93,10 +93,7 @@ void main() {
   });
 
   test('a retryable failure counts an attempt and schedules a retry', () async {
-    await useCase(
-      uploading(),
-      const UploadFailed(LowBandwidthFailure('slow')),
-    );
+    await useCase(uploading(), const UploadFailed(LowBandwidthFailure('slow')));
 
     verifyUpdate(
       status: UploadStatus.retrying,
@@ -135,31 +132,34 @@ void main() {
       const UploadFailed(ServerFailure('bad request', code: 400)),
     );
 
-    verifyUpdate(status: UploadStatus.failed, attempts: 0, error: 'bad request');
+    verifyUpdate(
+      status: UploadStatus.failed,
+      attempts: 0,
+      error: 'bad request',
+    );
   });
 
   test('a missing file fails immediately', () async {
-    await useCase(
-      uploading(),
-      const UploadFailed(FileMissingFailure('gone')),
-    );
+    await useCase(uploading(), const UploadFailed(FileMissingFailure('gone')));
 
     verifyUpdate(status: UploadStatus.failed, attempts: 0, error: 'gone');
   });
 
-  test('no internet waits for connectivity without using up an attempt',
-      () async {
-    await useCase(
-      uploading(attempts: 2),
-      const UploadFailed(NoInternetFailure('offline')),
-    );
+  test(
+    'no internet waits for connectivity without using up an attempt',
+    () async {
+      await useCase(
+        uploading(attempts: 2),
+        const UploadFailed(NoInternetFailure('offline')),
+      );
 
-    verifyUpdate(
-      status: UploadStatus.waitingForConnection,
-      attempts: 2,
-      error: 'offline',
-    );
-  });
+      verifyUpdate(
+        status: UploadStatus.waitingForConnection,
+        attempts: 2,
+        error: 'offline',
+      );
+    },
+  );
 
   test('an unknown failure is retried like a slow connection', () async {
     await useCase(uploading(), const UploadFailed(UnknownFailure('odd')));
@@ -179,7 +179,10 @@ void main() {
         UploadStatus.uploaded,
       );
       expect(
-        await useCase(uploading(), const UploadFailed(LowBandwidthFailure('s'))),
+        await useCase(
+          uploading(),
+          const UploadFailed(LowBandwidthFailure('s')),
+        ),
         UploadStatus.retrying,
       );
       expect(
@@ -213,7 +216,10 @@ void main() {
         nextRetryAt: any(named: 'nextRetryAt'),
       ),
     ).thenThrow(
-      IllegalStatusTransitionError(UploadStatus.uploaded, UploadStatus.retrying),
+      IllegalStatusTransitionError(
+        UploadStatus.uploaded,
+        UploadStatus.retrying,
+      ),
     );
 
     await expectLater(

@@ -53,8 +53,7 @@ class BackgroundSyncRunner {
     return switch (result.outcome) {
       SyncPassOutcome.pausedByUser => true,
       SyncPassOutcome.interruptedByConnectivity ||
-      SyncPassOutcome.cancelled =>
-        false,
+      SyncPassOutcome.cancelled => false,
       SyncPassOutcome.completed => !result.hasWorkRemaining,
     };
   }

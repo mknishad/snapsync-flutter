@@ -113,8 +113,8 @@ void main() {
         images: [image],
       );
 
-      final restored =
-          BatchModel.fromMap(batch.toModel().toMap()).toEntity([image]);
+      final restored = BatchModel.fromMap(batch.toModel().toMap())
+          .toEntity([image]);
 
       expect(restored, batch);
     });

@@ -24,7 +24,9 @@ void main() {
   tearDown(() => directory.deleteSync(recursive: true));
 
   SyncSettingsRepositoryImpl settingsOn(DatabaseHelper helper) {
-    return SyncSettingsRepositoryImpl(SettingsStore(helper, const SettingsDao()));
+    return SyncSettingsRepositoryImpl(
+      SettingsStore(helper, const SettingsDao()),
+    );
   }
 
   group('paused flag', () {
@@ -70,7 +72,10 @@ void main() {
           },
         ),
       );
-      await v1.insert(DatabaseSchema.batchesTable, {'id': 'old-batch', 'created_at': 1});
+      await v1.insert(DatabaseSchema.batchesTable, {
+        'id': 'old-batch',
+        'created_at': 1,
+      });
       await v1.insert(DatabaseSchema.imagesTable, {
         'id': 'old-image',
         'batch_id': 'old-batch',
@@ -105,16 +110,19 @@ void main() {
       expect(await settingsOn(helper).isPaused(), isTrue);
     });
 
-    test('a fresh install is created directly at the current version', () async {
-      final db = await createTestDatabaseHelper().database;
-      addTearDown(db.close);
+    test(
+      'a fresh install is created directly at the current version',
+      () async {
+        final db = await createTestDatabaseHelper().database;
+        addTearDown(db.close);
 
-      expect(await db.getVersion(), AppConstants.databaseVersion);
-      expect(AppConstants.databaseVersion, 2);
-      expect(
-        await db.query('sqlite_master', where: "name = 'settings'"),
-        hasLength(1),
-      );
-    });
+        expect(await db.getVersion(), AppConstants.databaseVersion);
+        expect(AppConstants.databaseVersion, 2);
+        expect(
+          await db.query('sqlite_master', where: "name = 'settings'"),
+          hasLength(1),
+        );
+      },
+    );
   });
 }

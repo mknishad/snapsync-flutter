@@ -78,7 +78,8 @@ ORDER BY i.${DatabaseSchema.colCapturedAt} ASC, i.${DatabaseSchema.colId}
     ].map((s) => "'${s.name}'").join(', ');
     final rows = await db.query(
       _table,
-      where: '${DatabaseSchema.colStatus} IN ($statuses) '
+      where:
+          '${DatabaseSchema.colStatus} IN ($statuses) '
           'AND ${DatabaseSchema.colBatchId} IN ($_submittedBatchIds)',
       orderBy: '${DatabaseSchema.colCapturedAt} ASC, ${DatabaseSchema.colId}',
     );
@@ -120,10 +121,7 @@ WHERE ${DatabaseSchema.colId} = ?
 
   /// Marks queued and retrying images of submitted batches as waiting for a
   /// connection. Their retry times are kept. Returns the number changed.
-  Future<int> markWaitingForConnection(
-    DatabaseExecutor db,
-    int nowMillis,
-  ) {
+  Future<int> markWaitingForConnection(DatabaseExecutor db, int nowMillis) {
     return db.rawUpdate(
       '''
 UPDATE $_table
@@ -197,7 +195,8 @@ WHERE ${DatabaseSchema.colStatus} IN (?, ?)
         DatabaseSchema.colStatus: UploadStatus.queued.name,
         DatabaseSchema.colUpdatedAt: updatedAtMillis,
       },
-      where: '${DatabaseSchema.colStatus} = ? '
+      where:
+          '${DatabaseSchema.colStatus} = ? '
           'AND ${DatabaseSchema.colUpdatedAt} <= ?',
       whereArgs: [UploadStatus.uploading.name, staleBeforeMillis],
     );

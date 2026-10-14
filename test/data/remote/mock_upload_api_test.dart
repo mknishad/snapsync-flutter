@@ -33,41 +33,51 @@ void main() {
     return (result, progress);
   }
 
-  test('alwaysSuccess succeeds, with monotonic progress ending at 1.0',
-      () async {
-    final (result, progress) =
-        await run(MockUploadApi(config(MockUploadMode.alwaysSuccess)));
+  test(
+    'alwaysSuccess succeeds, with monotonic progress ending at 1.0',
+    () async {
+      final (result, progress) = await run(
+        MockUploadApi(config(MockUploadMode.alwaysSuccess)),
+      );
 
-    expect(result, const UploadSuccess(serverReference: 'mock-ref-img-1'));
-    expect(progress, [0.2, 0.4, 0.6, 0.8, 1.0]);
-    for (var i = 1; i < progress.length; i++) {
-      expect(progress[i], greaterThan(progress[i - 1]));
-    }
-  });
+      expect(result, const UploadSuccess(serverReference: 'mock-ref-img-1'));
+      expect(progress, [0.2, 0.4, 0.6, 0.8, 1.0]);
+      for (var i = 1; i < progress.length; i++) {
+        expect(progress[i], greaterThan(progress[i - 1]));
+      }
+    },
+  );
 
-  test('alwaysNoInternet fails with NoInternetFailure and no progress',
-      () async {
-    final (result, progress) =
-        await run(MockUploadApi(config(MockUploadMode.alwaysNoInternet)));
+  test(
+    'alwaysNoInternet fails with NoInternetFailure and no progress',
+    () async {
+      final (result, progress) = await run(
+        MockUploadApi(config(MockUploadMode.alwaysNoInternet)),
+      );
 
-    expect(result, isA<UploadFailed>());
-    expect((result as UploadFailed).failure, isA<NoInternetFailure>());
-    expect(progress, isEmpty);
-  });
+      expect(result, isA<UploadFailed>());
+      expect((result as UploadFailed).failure, isA<NoInternetFailure>());
+      expect(progress, isEmpty);
+    },
+  );
 
-  test('alwaysLowBandwidth stalls part-way and fails with LowBandwidthFailure',
-      () async {
-    final (result, progress) =
-        await run(MockUploadApi(config(MockUploadMode.alwaysLowBandwidth)));
+  test(
+    'alwaysLowBandwidth stalls part-way and fails with LowBandwidthFailure',
+    () async {
+      final (result, progress) = await run(
+        MockUploadApi(config(MockUploadMode.alwaysLowBandwidth)),
+      );
 
-    expect((result as UploadFailed).failure, isA<LowBandwidthFailure>());
-    expect(progress, isNotEmpty);
-    expect(progress.last, lessThan(1));
-  });
+      expect((result as UploadFailed).failure, isA<LowBandwidthFailure>());
+      expect(progress, isNotEmpty);
+      expect(progress.last, lessThan(1));
+    },
+  );
 
   test('alwaysServerError fails with a retryable 500', () async {
-    final (result, _) =
-        await run(MockUploadApi(config(MockUploadMode.alwaysServerError)));
+    final (result, _) = await run(
+      MockUploadApi(config(MockUploadMode.alwaysServerError)),
+    );
 
     final failure = (result as UploadFailed).failure;
     expect(failure, isA<ServerFailure>());
@@ -85,7 +95,10 @@ void main() {
   });
 
   group('flaky', () {
-    Future<List<UploadResult>> sequence(int seed, {double probability = 0.5}) async {
+    Future<List<UploadResult>> sequence(
+      int seed, {
+      double probability = 0.5,
+    }) async {
       final api = MockUploadApi(
         config(MockUploadMode.flaky, probability: probability),
         random: Random(seed),
@@ -108,8 +121,14 @@ void main() {
     });
 
     test('probability 1.0 always succeeds and 0.0 always fails', () async {
-      expect((await sequence(3, probability: 1)).every((r) => r is UploadSuccess), isTrue);
-      expect((await sequence(3, probability: 0)).every((r) => r is UploadFailed), isTrue);
+      expect(
+        (await sequence(3, probability: 1)).every((r) => r is UploadSuccess),
+        isTrue,
+      );
+      expect(
+        (await sequence(3, probability: 0)).every((r) => r is UploadFailed),
+        isTrue,
+      );
     });
   });
 

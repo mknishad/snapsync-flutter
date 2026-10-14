@@ -3,9 +3,7 @@ import 'package:equatable/equatable.dart';
 class ProbeResult extends Equatable {
   const ProbeResult.reachable(Duration this.latency) : reachable = true;
 
-  const ProbeResult.unreachable()
-      : reachable = false,
-        latency = null;
+  const ProbeResult.unreachable() : reachable = false, latency = null;
 
   final bool reachable;
 

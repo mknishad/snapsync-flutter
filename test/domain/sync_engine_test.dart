@@ -60,24 +60,26 @@ void main() {
   UploadFailed failed(Failure failure) => UploadFailed(failure);
 
   group('a successful pass', () {
-    test('uploads everything in capture order and deletes the local files',
-        () async {
-      final images = await env.submitImages(3);
+    test(
+      'uploads everything in capture order and deletes the local files',
+      () async {
+        final images = await env.submitImages(3);
 
-      final result = await env.engine.runPass();
+        final result = await env.engine.runPass();
 
-      expect(env.api.calls, images.map((i) => i.id));
-      expect(result.outcome, SyncPassOutcome.completed);
-      expect(result.uploaded, 3);
-      expect(result.failed, 0);
-      expect(result.remaining, 0);
-      expect(result.nextRetryAt, isNull);
-      for (final image in images) {
-        final stored = await env.image(image.id);
-        expect(stored.status, UploadStatus.uploaded);
-        expect(File(image.filePath).existsSync(), isFalse);
-      }
-    });
+        expect(env.api.calls, images.map((i) => i.id));
+        expect(result.outcome, SyncPassOutcome.completed);
+        expect(result.uploaded, 3);
+        expect(result.failed, 0);
+        expect(result.remaining, 0);
+        expect(result.nextRetryAt, isNull);
+        for (final image in images) {
+          final stored = await env.image(image.id);
+          expect(stored.status, UploadStatus.uploaded);
+          expect(File(image.filePath).existsSync(), isFalse);
+        }
+      },
+    );
 
     test('emits monotonic progress for the foreground UI', () async {
       final images = await env.submitImages(1, bytes: 200);
@@ -94,14 +96,16 @@ void main() {
       expect(events.last.bytesUploaded, 200);
     });
 
-    test('does nothing and never probes the network when nothing is due',
-        () async {
-      final result = await env.engine.runPass();
+    test(
+      'does nothing and never probes the network when nothing is due',
+      () async {
+        final result = await env.engine.runPass();
 
-      expect(result.outcome, SyncPassOutcome.completed);
-      expect(env.api.calls, isEmpty);
-      expect(env.monitor.checkNowCount, 0);
-    });
+        expect(result.outcome, SyncPassOutcome.completed);
+        expect(env.api.calls, isEmpty);
+        expect(env.monitor.checkNowCount, 0);
+      },
+    );
 
     test('images in an open batch are not uploaded', () async {
       final batch = await env.repository.getOrCreateOpenBatch();
@@ -194,11 +198,16 @@ void main() {
       for (var i = 0; i < 2; i++) {
         final before = env.now;
         await env.engine.runPass();
-        delays.add((await env.image(images.single.id)).nextRetryAt!.difference(before));
+        delays.add(
+          (await env.image(images.single.id)).nextRetryAt!.difference(before),
+        );
         env.advance(const Duration(minutes: 5));
       }
 
-      expect(delays, [const Duration(seconds: 30), const Duration(seconds: 60)]);
+      expect(delays, [
+        const Duration(seconds: 30),
+        const Duration(seconds: 60),
+      ]);
     });
 
     test('retries are exhausted after the maximum attempts', () async {
@@ -262,17 +271,19 @@ void main() {
       expect(env.api.calls, hasLength(1));
     });
 
-    test('an exception thrown by the API is recorded, not left uploading',
-        () async {
-      final images = await env.submitImages(1);
-      env.api.whileUploading = (_) => throw StateError('boom');
+    test(
+      'an exception thrown by the API is recorded, not left uploading',
+      () async {
+        final images = await env.submitImages(1);
+        env.api.whileUploading = (_) => throw StateError('boom');
 
-      await env.engine.runPass();
+        await env.engine.runPass();
 
-      final stored = await env.image(images.single.id);
-      expect(stored.status, UploadStatus.retrying);
-      expect(stored.lastError, contains('StateError'));
-    });
+        final stored = await env.image(images.single.id);
+        expect(stored.status, UploadStatus.retrying);
+        expect(stored.lastError, contains('StateError'));
+      },
+    );
   });
 
   group('pause and connectivity', () {
@@ -290,7 +301,9 @@ void main() {
     test('pausing mid-pass stops before the next image', () async {
       final images = await env.submitImages(3);
       env.api.whileUploading = (image) async {
-        if (image.id == images[0].id) await env.settings.setPaused(paused: true);
+        if (image.id == images[0].id) {
+          await env.settings.setPaused(paused: true);
+        }
       };
 
       final result = await env.engine.runPass();
@@ -312,20 +325,24 @@ void main() {
       expect(result.uploaded, 2);
     });
 
-    test('an unstable link at the start uploads nothing and shows waiting',
-        () async {
-      final images = await env.submitImages(2);
-      env.monitor.quality = LinkQuality.unstable;
+    test(
+      'an unstable link at the start uploads nothing and shows waiting',
+      () async {
+        final images = await env.submitImages(2);
+        env.monitor.quality = LinkQuality.unstable;
 
-      final result = await env.engine.runPass();
+        final result = await env.engine.runPass();
 
-      expect(result.outcome, SyncPassOutcome.interruptedByConnectivity);
-      expect(env.api.calls, isEmpty);
-      for (final image in images) {
-        expect((await env.image(image.id)).status,
-            UploadStatus.waitingForConnection);
-      }
-    });
+        expect(result.outcome, SyncPassOutcome.interruptedByConnectivity);
+        expect(env.api.calls, isEmpty);
+        for (final image in images) {
+          expect(
+            (await env.image(image.id)).status,
+            UploadStatus.waitingForConnection,
+          );
+        }
+      },
+    );
 
     test('an offline link at the start is treated the same way', () async {
       await env.submitImages(1);
@@ -366,61 +383,77 @@ void main() {
   });
 
   group('claiming', () {
-    test('two engines running at once never upload the same image twice',
-        () async {
-      await recreateEnv(fileDatabase: true);
-      final images = await env.submitImages(12);
-      // A second engine on its own connection to the same database file, like
-      // the background isolate. Both report to the same recording API.
-      final second = await env.newSecondEngine(monitor: FakeConnectivityMonitor());
+    test(
+      'two engines running at once never upload the same image twice',
+      () async {
+        await recreateEnv(fileDatabase: true);
+        final images = await env.submitImages(12);
+        // A second engine on its own connection to the same database file, like
+        // the background isolate. Both report to the same recording API.
+        final second = await env.newSecondEngine(
+          monitor: FakeConnectivityMonitor(),
+        );
 
-      final results = await Future.wait([
-        env.engine.runPass(),
-        second.engine.runPass(),
-      ]);
+        final results = await Future.wait([
+          env.engine.runPass(),
+          second.engine.runPass(),
+        ]);
 
-      final calls = env.api.calls;
-      expect(calls.toSet(), hasLength(calls.length),
-          reason: 'no image uploaded twice');
-      expect(calls.toSet(), images.map((i) => i.id).toSet());
-      expect(results.fold<int>(0, (sum, r) => sum + r.uploaded), 12);
-      expect(
-        results.fold<int>(0, (sum, r) => sum + r.skippedClaimedByOther),
-        greaterThan(0),
-        reason: 'the engines really did race for the same images',
-      );
-      for (final image in images) {
-        expect((await env.image(image.id)).status, UploadStatus.uploaded);
-      }
-    });
+        final calls = env.api.calls;
+        expect(
+          calls.toSet(),
+          hasLength(calls.length),
+          reason: 'no image uploaded twice',
+        );
+        expect(calls.toSet(), images.map((i) => i.id).toSet());
+        expect(results.fold<int>(0, (sum, r) => sum + r.uploaded), 12);
+        expect(
+          results.fold<int>(0, (sum, r) => sum + r.skippedClaimedByOther),
+          greaterThan(0),
+          reason: 'the engines really did race for the same images',
+        );
+        for (final image in images) {
+          expect((await env.image(image.id)).status, UploadStatus.uploaded);
+        }
+      },
+    );
 
-    test('a claim is atomic: only one of two connections wins an image',
-        () async {
-      await recreateEnv(fileDatabase: true);
-      final images = await env.submitImages(1);
-      final other = await env.newSecondEngine(monitor: FakeConnectivityMonitor());
+    test(
+      'a claim is atomic: only one of two connections wins an image',
+      () async {
+        await recreateEnv(fileDatabase: true);
+        final images = await env.submitImages(1);
+        final other = await env.newSecondEngine(
+          monitor: FakeConnectivityMonitor(),
+        );
 
-      final claims = await Future.wait([
-        env.repository.claimImage(images.single.id),
-        other.repository.claimImage(images.single.id),
-      ]);
+        final claims = await Future.wait([
+          env.repository.claimImage(images.single.id),
+          other.repository.claimImage(images.single.id),
+        ]);
 
-      expect(claims.where((c) => c != null), hasLength(1));
-    });
+        expect(claims.where((c) => c != null), hasLength(1));
+      },
+    );
 
-    test('a claim abandoned by a killed process is released after the timeout',
-        () async {
-      final images = await env.submitImages(1);
-      // A process claimed the image and died.
-      expect(await env.repository.claimImage(images.single.id), isNotNull);
-      expect((await env.image(images.single.id)).status, UploadStatus.uploading);
+    test(
+      'a claim abandoned by a killed process is released after the timeout',
+      () async {
+        final images = await env.submitImages(1);
+        // A process claimed the image and died.
+        expect(await env.repository.claimImage(images.single.id), isNotNull);
+        expect(
+          (await env.image(images.single.id)).status,
+          UploadStatus.uploading,
+        );
 
-      env.advance(env.claimTimeout + const Duration(seconds: 1));
-      final result = await env.engine.runPass();
+        env.advance(env.claimTimeout + const Duration(seconds: 1));
+        final result = await env.engine.runPass();
 
-      expect(result.uploaded, 1);
-      expect(env.api.calls, [images.single.id]);
-    });
+        expect(result.uploaded, 1);
+        expect(env.api.calls, [images.single.id]);
+      },
+    );
 
     test('a fresh claim is left alone', () async {
       final images = await env.submitImages(1);
@@ -430,12 +463,14 @@ void main() {
       final result = await env.engine.runPass();
 
       expect(env.api.calls, isEmpty);
-      expect((await env.image(images.single.id)).status, UploadStatus.uploading);
+      expect(
+        (await env.image(images.single.id)).status,
+        UploadStatus.uploading,
+      );
       expect(result.remaining, 1);
     });
 
-    test('a long upload renews its claim so it is not mistaken for abandoned',
-        () async {
+    test('a long upload renews its claim so it is not mistaken for abandoned', () async {
       await recreateEnv(claimRenewInterval: const Duration(seconds: 10));
       final images = await env.submitImages(1);
       final id = images.single.id;
@@ -458,9 +493,8 @@ void main() {
     test('concurrency 2 uploads two images at the same time', () async {
       await recreateEnv(concurrency: 2);
       await env.submitImages(4);
-      env.api.whileUploading = (_) => Future<void>.delayed(
-            const Duration(milliseconds: 5),
-          );
+      env.api.whileUploading = (_) =>
+          Future<void>.delayed(const Duration(milliseconds: 5));
 
       final result = await env.engine.runPass();
 
@@ -470,9 +504,8 @@ void main() {
 
     test('concurrency 1 never overlaps uploads', () async {
       await env.submitImages(3);
-      env.api.whileUploading = (_) => Future<void>.delayed(
-            const Duration(milliseconds: 5),
-          );
+      env.api.whileUploading = (_) =>
+          Future<void>.delayed(const Duration(milliseconds: 5));
 
       await env.engine.runPass();
 
@@ -495,17 +528,23 @@ void main() {
       expect((await env.image(images[0].id)).status, UploadStatus.uploading);
 
       await env.engine.cancelPass();
-      expect((await env.image(images[0].id)).status,
-          UploadStatus.waitingForConnection);
+      expect(
+        (await env.image(images[0].id)).status,
+        UploadStatus.waitingForConnection,
+      );
 
       gate.complete();
       final result = await pass;
 
       expect(result.outcome, SyncPassOutcome.cancelled);
-      expect((await env.image(images[0].id)).status,
-          UploadStatus.waitingForConnection,
-          reason: 'the late result must not overwrite the released claim');
-      expect(env.api.calls, [images[0].id], reason: 'second image never started');
+      expect(
+        (await env.image(images[0].id)).status,
+        UploadStatus.waitingForConnection,
+        reason: 'the late result must not overwrite the released claim',
+      );
+      expect(env.api.calls, [
+        images[0].id,
+      ], reason: 'second image never started');
     });
 
     test('the engine can run a fresh pass afterwards', () async {
@@ -517,5 +556,4 @@ void main() {
       expect(result.uploaded, 1);
     });
   });
-
 }

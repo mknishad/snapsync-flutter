@@ -18,10 +18,9 @@ class SettingsDao {
   }
 
   Future<void> put(DatabaseExecutor db, String key, String value) async {
-    await db.insert(
-      _table,
-      {DatabaseSchema.colKey: key, DatabaseSchema.colValue: value},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    await db.insert(_table, {
+      DatabaseSchema.colKey: key,
+      DatabaseSchema.colValue: value,
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
   }
 }

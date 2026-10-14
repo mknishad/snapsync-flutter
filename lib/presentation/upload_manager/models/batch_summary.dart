@@ -35,12 +35,12 @@ class BatchSummary extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        submittedAt,
-        totalCount,
-        uploadedCount,
-        totalBytes,
-        uploadedBytes,
-        status,
-      ];
+    id,
+    submittedAt,
+    totalCount,
+    uploadedCount,
+    totalBytes,
+    uploadedBytes,
+    status,
+  ];
 }

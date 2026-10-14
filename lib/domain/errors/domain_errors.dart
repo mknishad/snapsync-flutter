@@ -9,7 +9,8 @@ class IllegalStatusTransitionError extends Error {
   final UploadStatus to;
 
   @override
-  String toString() => 'IllegalStatusTransitionError: ${from.name} -> ${to.name}';
+  String toString() =>
+      'IllegalStatusTransitionError: ${from.name} -> ${to.name}';
 }
 
 /// An operation that the batch's current state does not allow, for example

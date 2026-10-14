@@ -148,7 +148,8 @@ class SyncEngine {
           return;
         }
         // The link was verified at the start; re-check only between uploads.
-        if (started > 0 && await connectivity.checkNow() == LinkQuality.offline) {
+        if (started > 0 &&
+            await connectivity.checkNow() == LinkQuality.offline) {
           stop = SyncPassOutcome.interruptedByConnectivity;
           return;
         }
@@ -195,18 +196,22 @@ class SyncEngine {
 
   Future<UploadResult> _upload(CapturedImage image) async {
     var lastRenewal = _now();
-    _emit(SyncProgress(
-      imageId: image.id,
-      fraction: 0,
-      totalBytes: image.fileSizeBytes,
-    ));
+    _emit(
+      SyncProgress(
+        imageId: image.id,
+        fraction: 0,
+        totalBytes: image.fileSizeBytes,
+      ),
+    );
 
     void onProgress(double fraction) {
-      _emit(SyncProgress(
-        imageId: image.id,
-        fraction: fraction.clamp(0, 1),
-        totalBytes: image.fileSizeBytes,
-      ));
+      _emit(
+        SyncProgress(
+          imageId: image.id,
+          fraction: fraction.clamp(0, 1),
+          totalBytes: image.fileSizeBytes,
+        ),
+      );
       final now = _now();
       if (now.difference(lastRenewal) >= claimRenewInterval) {
         lastRenewal = now;

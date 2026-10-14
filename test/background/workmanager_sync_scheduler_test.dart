@@ -49,15 +49,12 @@ void main() {
   test('task names are distinct and recognised as sync tasks', () {
     expect(TaskNames.oneOffSyncUniqueName, 'snapsync.sync.now');
     expect(TaskNames.periodicSyncUniqueName, 'snapsync.sync.periodic');
-    expect(
-      {
-        TaskNames.oneOffSyncUniqueName,
-        TaskNames.periodicSyncUniqueName,
-        TaskNames.oneOffSyncTask,
-        TaskNames.periodicSyncTask,
-      },
-      hasLength(4),
-    );
+    expect({
+      TaskNames.oneOffSyncUniqueName,
+      TaskNames.periodicSyncUniqueName,
+      TaskNames.oneOffSyncTask,
+      TaskNames.periodicSyncTask,
+    }, hasLength(4));
     expect(TaskNames.isSyncTask(TaskNames.oneOffSyncTask), isTrue);
     expect(TaskNames.isSyncTask(TaskNames.periodicSyncTask), isTrue);
     expect(TaskNames.isSyncTask('something.else'), isFalse);
@@ -115,8 +112,11 @@ void main() {
       expect(captured[1], TaskNames.periodicSyncTask);
       expect(captured[2], const Duration(minutes: 15));
       expect((captured[3] as Constraints).networkType, NetworkType.connected);
-      expect(captured[4], ExistingPeriodicWorkPolicy.update,
-          reason: 'safe to register at every start');
+      expect(
+        captured[4],
+        ExistingPeriodicWorkPolicy.update,
+        reason: 'safe to register at every start',
+      );
     });
 
     test('uses the platform minimum frequency', () {

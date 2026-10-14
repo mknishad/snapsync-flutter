@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:snapsync/core/error/failure.dart';
 import 'package:snapsync/core/utils/safe_log.dart';
@@ -32,7 +33,8 @@ class BatchCubit extends Cubit<BatchState> {
   Future<void> start() async {
     await _subscription?.cancel();
     _subscription = repository.watchOpenBatch().listen(
-      (batch) => emit(BatchState(status: BatchStatus.ready, currentBatch: batch)),
+      (batch) =>
+          emit(BatchState(status: BatchStatus.ready, currentBatch: batch)),
       onError: (Object error) => emit(
         BatchState(
           status: BatchStatus.failure,

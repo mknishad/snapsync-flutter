@@ -223,8 +223,11 @@ void main() {
       },
       verify: (cubit) {
         verify(() => engine.runPass()).called(2);
-        expect(scheduler.enqueueCount, greaterThanOrEqualTo(2),
-            reason: 'a background fallback is kept alive');
+        expect(
+          scheduler.enqueueCount,
+          greaterThanOrEqualTo(2),
+          reason: 'a background fallback is kept alive',
+        );
       },
     );
 
@@ -239,9 +242,13 @@ void main() {
         await settle();
         clearInteractions(engine);
 
-        batches.add([batch('b1', [image('a', UploadStatus.queued)])]);
+        batches.add([
+          batch('b1', [image('a', UploadStatus.queued)]),
+        ]);
         await settle();
-        batches.add([batch('b1', [image('a', UploadStatus.queued)])]);
+        batches.add([
+          batch('b1', [image('a', UploadStatus.queued)]),
+        ]);
         await settle();
       },
       verify: (cubit) => verify(() => engine.runPass()).called(1),
@@ -252,7 +259,9 @@ void main() {
       build: build,
       act: (cubit) async {
         await cubit.start();
-        batches.add([batch('b1', [image('a', UploadStatus.queued)])]);
+        batches.add([
+          batch('b1', [image('a', UploadStatus.queued)]),
+        ]);
         await settle();
       },
       verify: (cubit) => verifyNever(() => engine.runPass()),
@@ -528,16 +537,19 @@ void main() {
         await env.submitImages(3);
         await cubit.start();
         await eventually(() => cubit.state.items.length == 3);
-        expect(cubit.state.items.map((i) => i.status),
-            everyElement(UploadStatus.queued));
+        expect(
+          cubit.state.items.map((i) => i.status),
+          everyElement(UploadStatus.queued),
+        );
 
         // The link drop event.
         final monitor = cubit.connectivity as FakeConnectivityMonitor;
         monitor.emit(LinkQuality.unstable);
         monitor.emit(LinkQuality.offline);
         await eventually(
-          () => cubit.state.items
-              .every((i) => i.status == UploadStatus.waitingForConnection),
+          () => cubit.state.items.every(
+            (i) => i.status == UploadStatus.waitingForConnection,
+          ),
         );
       },
       verify: (cubit) {
@@ -554,10 +566,12 @@ void main() {
         await cubit.start();
         await eventually(() => cubit.state.items.length == 3);
 
-        (cubit.connectivity as FakeConnectivityMonitor)
-            .emit(LinkQuality.stable);
+        (cubit.connectivity as FakeConnectivityMonitor).emit(
+          LinkQuality.stable,
+        );
         await eventually(
-          () => cubit.state.items.every((i) => i.status == UploadStatus.uploaded),
+          () =>
+              cubit.state.items.every((i) => i.status == UploadStatus.uploaded),
         );
 
         expect(env.api.calls, images.map((i) => i.id));
@@ -573,11 +587,13 @@ void main() {
       'failures show retry text and a pending retry',
       build: () => build(monitor: FakeConnectivityMonitor(LinkQuality.stable)),
       act: (cubit) async {
-        env.api.handler = (_) => const UploadFailed(LowBandwidthFailure('slow'));
+        env.api.handler = (_) =>
+            const UploadFailed(LowBandwidthFailure('slow'));
         await env.submitImages(1);
         await cubit.start();
         await eventually(
-          () => cubit.state.items.isNotEmpty &&
+          () =>
+              cubit.state.items.isNotEmpty &&
               cubit.state.items.single.status == UploadStatus.retrying,
         );
       },
@@ -598,14 +614,16 @@ void main() {
         await eventually(() => cubit.state.items.length == 2);
 
         await cubit.pauseAll();
-        (cubit.connectivity as FakeConnectivityMonitor)
-            .emit(LinkQuality.stable);
+        (cubit.connectivity as FakeConnectivityMonitor).emit(
+          LinkQuality.stable,
+        );
         await settle();
         expect(env.api.calls, isEmpty, reason: 'paused');
 
         await cubit.resumeAll();
         await eventually(
-          () => cubit.state.items.every((i) => i.status == UploadStatus.uploaded),
+          () =>
+              cubit.state.items.every((i) => i.status == UploadStatus.uploaded),
         );
       },
       verify: (cubit) => expect(cubit.state.isPaused, isFalse),
@@ -620,14 +638,16 @@ void main() {
         await env.submitImages(2);
         await cubit.start();
         await eventually(
-          () => cubit.state.items.length == 2 &&
+          () =>
+              cubit.state.items.length == 2 &&
               cubit.state.items.every((i) => i.status == UploadStatus.failed),
         );
 
         env.api.handler = null;
         await cubit.retryAllFailed();
         await eventually(
-          () => cubit.state.items.every((i) => i.status == UploadStatus.uploaded),
+          () =>
+              cubit.state.items.every((i) => i.status == UploadStatus.uploaded),
         );
       },
     );
@@ -641,20 +661,25 @@ void main() {
         await eventually(() => cubit.state.items.length == 1);
 
         // The background isolate: its own connection, no signal to this one.
-        final background =
-            await env.newSecondEngine(monitor: FakeConnectivityMonitor());
+        final background = await env.newSecondEngine(
+          monitor: FakeConnectivityMonitor(),
+        );
         await background.repository.updateImageStatus(
           imageId: images.single.id,
           status: UploadStatus.waitingForConnection,
           attemptCount: 0,
         );
         await settle();
-        expect(cubit.state.items.single.status, UploadStatus.queued,
-            reason: 'no signal yet');
+        expect(
+          cubit.state.items.single.status,
+          UploadStatus.queued,
+          reason: 'no signal yet',
+        );
 
         await cubit.onAppResumed();
         await eventually(
-          () => cubit.state.items.single.status ==
+          () =>
+              cubit.state.items.single.status ==
               UploadStatus.waitingForConnection,
         );
       },

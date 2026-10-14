@@ -25,13 +25,18 @@ UploadItemViewModel map(CapturedImage image, {double? live}) =>
     UploadItemViewModel.fromImage(image, maxAttempts: 3, liveProgress: live);
 
 void main() {
-  test('display name is built from the capture time and keeps the extension',
-      () {
-    final expectedStamp = DateFormat('yyyyMMdd_HHmmss')
-        .format(DateTime.utc(2026, 4, 1, 9, 5, 7).toLocal());
+  test(
+    'display name is built from the capture time and keeps the extension',
+    () {
+      final expectedStamp = DateFormat('yyyyMMdd_HHmmss')
+          .format(DateTime.utc(2026, 4, 1, 9, 5, 7).toLocal());
 
-    expect(map(image(UploadStatus.queued)).displayName, 'IMG_$expectedStamp.png');
-  });
+      expect(
+        map(image(UploadStatus.queued)).displayName,
+        'IMG_$expectedStamp.png',
+      );
+    },
+  );
 
   group('attempt text', () {
     test('shows the attempt that will run next', () {

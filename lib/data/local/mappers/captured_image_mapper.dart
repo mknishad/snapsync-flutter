@@ -19,10 +19,12 @@ extension CapturedImageModelMapper on CapturedImageModel {
       status: _parseStatus(status),
       attemptCount: attemptCount,
       lastError: lastError,
-      nextRetryAt:
-          nextRetryAtMillis == null ? null : _fromMillis(nextRetryAtMillis!),
-      uploadedAt:
-          uploadedAtMillis == null ? null : _fromMillis(uploadedAtMillis!),
+      nextRetryAt: nextRetryAtMillis == null
+          ? null
+          : _fromMillis(nextRetryAtMillis!),
+      uploadedAt: uploadedAtMillis == null
+          ? null
+          : _fromMillis(uploadedAtMillis!),
     );
   }
 

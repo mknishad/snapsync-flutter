@@ -81,17 +81,19 @@ void main() {
       expect(probe.probeCount, 0, reason: 'no probe before the debounce ends');
     });
 
-    test('becomes stable only after the debounce AND a successful probe',
-        () async {
-      listen();
-      await settle();
+    test(
+      'becomes stable only after the debounce AND a successful probe',
+      () async {
+        listen();
+        await settle();
 
-      timers.last.fire();
-      await settle();
+        timers.last.fire();
+        await settle();
 
-      expect(probe.probeCount, 1);
-      expect(seen, [LinkQuality.unstable, LinkQuality.stable]);
-    });
+        expect(probe.probeCount, 1);
+        expect(seen, [LinkQuality.unstable, LinkQuality.stable]);
+      },
+    );
 
     test('a failed probe leaves the link unstable and is retried', () async {
       probe.defaultResult = const ProbeResult.unreachable();
@@ -103,7 +105,9 @@ void main() {
       expect(seen, [LinkQuality.unstable]);
       expect(timers.active.single.duration, unstableRecheck);
 
-      probe.defaultResult = const ProbeResult.reachable(Duration(milliseconds: 40));
+      probe.defaultResult = const ProbeResult.reachable(
+        Duration(milliseconds: 40),
+      );
       timers.last.fire();
       await settle();
 
@@ -133,25 +137,27 @@ void main() {
       expect(timers.active.single.duration, unstableRecheck);
     });
 
-    test('a stable link is re-checked and drops to unstable when the probe fails',
-        () async {
-      listen();
-      await settle();
-      timers.last.fire();
-      await settle();
-      expect(seen.last, LinkQuality.stable);
-      expect(timers.active.single.duration, stableRecheck);
+    test(
+      'a stable link is re-checked and drops to unstable when the probe fails',
+      () async {
+        listen();
+        await settle();
+        timers.last.fire();
+        await settle();
+        expect(seen.last, LinkQuality.stable);
+        expect(timers.active.single.duration, stableRecheck);
 
-      probe.defaultResult = const ProbeResult.unreachable();
-      timers.last.fire();
-      await settle();
+        probe.defaultResult = const ProbeResult.unreachable();
+        timers.last.fire();
+        await settle();
 
-      expect(seen, [
-        LinkQuality.unstable,
-        LinkQuality.stable,
-        LinkQuality.unstable,
-      ]);
-    });
+        expect(seen, [
+          LinkQuality.unstable,
+          LinkQuality.stable,
+          LinkQuality.unstable,
+        ]);
+      },
+    );
   });
 
   group('offline and flapping', () {
@@ -164,19 +170,21 @@ void main() {
       expect(timers.timers, isEmpty);
     });
 
-    test('going offline is emitted immediately and cancels pending checks',
-        () async {
-      listen();
-      await settle();
-      final debounceTimer = timers.last;
+    test(
+      'going offline is emitted immediately and cancels pending checks',
+      () async {
+        listen();
+        await settle();
+        final debounceTimer = timers.last;
 
-      connectivityChanges(none);
-      await settle();
+        connectivityChanges(none);
+        await settle();
 
-      expect(seen, [LinkQuality.unstable, LinkQuality.offline]);
-      expect(debounceTimer.isActive, isFalse);
-      expect(timers.active, isEmpty);
-    });
+        expect(seen, [LinkQuality.unstable, LinkQuality.offline]);
+        expect(debounceTimer.isActive, isFalse);
+        expect(timers.active, isEmpty);
+      },
+    );
 
     test('flapping restarts the debounce from zero', () async {
       listen();
@@ -206,23 +214,27 @@ void main() {
       ]);
     });
 
-    test('a probe in flight when the link drops cannot make it stable',
-        () async {
-      final probeAnswer = Completer<ProbeResult>();
-      probe.script.add(() => probeAnswer.future);
-      listen();
-      await settle();
-      timers.last.fire(); // probe now in flight
-      await settle();
+    test(
+      'a probe in flight when the link drops cannot make it stable',
+      () async {
+        final probeAnswer = Completer<ProbeResult>();
+        probe.script.add(() => probeAnswer.future);
+        listen();
+        await settle();
+        timers.last.fire(); // probe now in flight
+        await settle();
 
-      connectivityChanges(none);
-      await settle();
-      probeAnswer.complete(const ProbeResult.reachable(Duration(milliseconds: 10)));
-      await settle();
+        connectivityChanges(none);
+        await settle();
+        probeAnswer.complete(
+          const ProbeResult.reachable(Duration(milliseconds: 10)),
+        );
+        await settle();
 
-      expect(seen, [LinkQuality.unstable, LinkQuality.offline]);
-      expect(timers.active, isEmpty, reason: 'no re-check scheduled either');
-    });
+        expect(seen, [LinkQuality.unstable, LinkQuality.offline]);
+        expect(timers.active, isEmpty, reason: 'no re-check scheduled either');
+      },
+    );
 
     test('switching networks (wifi to mobile) is verified again', () async {
       listen();
@@ -272,8 +284,7 @@ void main() {
       expect(late, [LinkQuality.stable]);
     });
 
-    test('monitoring stops, and timers are cancelled, when the last listener leaves',
-        () async {
+    test('monitoring stops, and timers are cancelled, when the last listener leaves', () async {
       listen();
       await settle();
       expect(changes.hasListener, isTrue);
@@ -302,7 +313,10 @@ void main() {
     test('equal consecutive values are not repeated', () async {
       listen();
       await settle();
-      connectivityChanges(const [ConnectivityResult.wifi, ConnectivityResult.vpn]);
+      connectivityChanges(const [
+        ConnectivityResult.wifi,
+        ConnectivityResult.vpn,
+      ]);
       await settle();
 
       expect(seen, [LinkQuality.unstable]);

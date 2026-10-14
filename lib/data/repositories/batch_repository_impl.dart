@@ -106,7 +106,9 @@ class BatchRepositoryImpl implements BatchRepository {
       final db = await databaseHelper.database;
       final batch = await _requireBatch(db, batchId);
       if (batch.submittedAtMillis != null) {
-        throw IllegalBatchStateError('Cannot add an image to a submitted batch');
+        throw IllegalBatchStateError(
+          'Cannot add an image to a submitted batch',
+        );
       }
 
       final imageId = _generateId();
@@ -142,7 +144,9 @@ class BatchRepositoryImpl implements BatchRepository {
         final model = await imageDao.getById(txn, imageId);
         if (model == null) return null;
         if (model.status == UploadStatus.uploading.name) {
-          throw IllegalBatchStateError('Cannot remove an image while uploading');
+          throw IllegalBatchStateError(
+            'Cannot remove an image while uploading',
+          );
         }
         await imageDao.delete(txn, imageId);
         return model;
@@ -166,8 +170,10 @@ class BatchRepositoryImpl implements BatchRepository {
   Future<List<CapturedImage>> getUploadable(DateTime now) {
     return _guard(() async {
       final db = await databaseHelper.database;
-      final models =
-          await imageDao.getUploadable(db, now.millisecondsSinceEpoch);
+      final models = await imageDao.getUploadable(
+        db,
+        now.millisecondsSinceEpoch,
+      );
       return models.map((m) => m.toEntity()).toList();
     });
   }
@@ -368,7 +374,10 @@ class BatchRepositoryImpl implements BatchRepository {
     return batch;
   }
 
-  Future<CapturedImageModel> _requireImage(DatabaseExecutor db, String id) async {
+  Future<CapturedImageModel> _requireImage(
+    DatabaseExecutor db,
+    String id,
+  ) async {
     final image = await imageDao.getById(db, id);
     if (image == null) throw DatabaseFailure('Image $id does not exist');
     return image;

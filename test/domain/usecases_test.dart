@@ -25,7 +25,8 @@ void main() {
       fileSizeBytes: 1,
       capturedAt: DateTime.utc(2026),
     );
-    when(() => repository.getOrCreateOpenBatch()).thenAnswer((_) async => batch);
+    when(() => repository.getOrCreateOpenBatch())
+        .thenAnswer((_) async => batch);
     when(() => repository.addImage('b1', '/tmp/shot.jpg'))
         .thenAnswer((_) async => image);
 

@@ -81,4 +81,35 @@ abstract final class AppConstants {
   static const Duration mockProbeDelay = Duration(milliseconds: 50);
   static const Duration mockFastProbeLatency = Duration(milliseconds: 80);
   static const Duration mockSlowProbeLatency = Duration(seconds: 5);
+
+  // Camera
+  /// Opening the camera must finish within this time.
+  static const Duration cameraInitTimeout = Duration(seconds: 10);
+
+  /// Pause before the one automatic re-initialisation attempt.
+  static const Duration cameraRetryDelay = Duration(milliseconds: 500);
+
+  /// Minimum time between the end of one capture and the start of the next.
+  static const Duration cameraMinCaptureGap = Duration(milliseconds: 600);
+
+  /// How long the tap-to-focus indicator stays on screen.
+  static const Duration focusIndicatorDuration = Duration(milliseconds: 1500);
+
+  /// A preset button counts as active when the zoom is within this fraction of
+  /// its target (0.05 = 5 percent).
+  static const double zoomPresetSnapTolerance = 0.05;
+
+  /// The back camera counts as reaching ultra-wide when its minimum zoom is at
+  /// or below this value.
+  static const double ultraWideMinZoomThreshold = 0.9;
+
+  /// Zoom factor of an ultra-wide camera relative to the main one, assumed
+  /// when switching cameras to reach 0.5x.
+  static const double ultraWideBaseFactor = 0.5;
+
+  /// Offer 0.5x by switching to a second back camera even though Android does
+  /// not say which lens it is (see `UltraWideFinder`). Set to false to offer
+  /// 0.5x only where the camera itself zooms below 1.0 or reports an
+  /// ultra-wide lens.
+  static const bool cameraAllowUnverifiedUltraWideSwitch = true;
 }

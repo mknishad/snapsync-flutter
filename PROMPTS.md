@@ -157,3 +157,60 @@ IMPORTANT: look up the CURRENT API of the workmanager and connectivity_plus pack
 
 Rules: no secrets or real URLs in code; handle every failure explicitly instead of swallowing exceptions; no logging of file paths beyond debug builds; keep functions small; ask me before adding any dependency.
 ```
+
+## 4. Camera logic
+
+```text
+Continue on the existing "snapsync" Flutter project. Domain, data and sync layers are done and tested. In this step, implement the CAMERA LOGIC: a camera service, CameraCubit, zoom, tap-to-focus, lens switching, capture into the open batch, and permission and hardware-failure handling. Do not build the final UI yet. A minimal temporary CameraPreviewScreen (live preview plus plain buttons to exercise each feature) is fine.
+
+Before writing code, review the existing entities, use cases (AddCapturedImage and others), BatchCubit, DI setup and constants, and reuse them. Tell me if you need to change any earlier decision.
+
+IMPORTANT: look up the CURRENT API of the installed camera package and permission_handler (documentation or source) before using them. Do not rely on memory of older APIs. Tell me which API surface you used. Where the camera package behaves differently across devices, say so in code comments and in the final summary.
+
+1. CameraService (data/ or core/, behind an interface so the cubit can be tested with a fake)
+- Interface CameraService, implemented by CameraPackageService wrapping CameraController. It exposes: initialise(CameraDescription, resolution preset), dispose(), the live preview widget or controller handle needed by the UI, zoom range (min, max), setZoom(double), setFocusPoint(Offset normalised), setExposurePoint(Offset normalised), setFlashMode, capture() returning a temp file, supportsFocus/supportsFlash flags, and a stream or callback for camera errors.
+- Camera discovery: list available cameras once, group them into back and front. Back cameras may be reported as one logical camera or several (wide, ultra-wide, telephoto) depending on the device. Build a ZoomPresets model from what is actually available:
+  - 1x is always present.
+  - 0.5x is offered ONLY if it can really be achieved: either the controller's minimum zoom level is below 1.0 (then map 0.5x to that zoom), or a second back camera exists that can plausibly be the ultra-wide (then switch to it). If neither applies, do not show 0.5x at all. Never fake a 0.5x button that does nothing.
+  - 2x is offered if max zoom is at least 2.0 (digital or optical).
+  - Express the presets as a list of ZoomPreset(label, targetZoom, optional cameraToSwitchTo) so the UI just renders them.
+  - Document the heuristic used for "which back camera is the ultra-wide" and its limits honestly.
+- Resolution: default to a high preset, with automatic fallback to a lower one if initialisation fails. Use JPEG output. Disable audio (enableAudio: false) so no microphone permission is needed.
+- Lock capture orientation sensibly or handle rotation so saved images are upright; explain what you chose.
+
+2. Zoom
+- Pure, testable logic (a ZoomController class or functions, no Flutter dependencies): clamp to [min, max]; pinch scale to zoom (base zoom at gesture start multiplied by scale); slider value (0..1) to zoom and back using a logarithmic or perceptually even mapping (explain the choice) so 0.5x to 2x feels even; snapping of the displayed preset button to the nearest preset when within a small tolerance.
+- setZoom calls are async and can arrive faster than the platform handles them. Coalesce updates (apply only the latest pending value, never queue a backlog) and never let a slow zoom call freeze the UI.
+- Zoom resets to 1x when switching lens, and the state always reflects the real current zoom, so pinch, slider and buttons stay in sync with each other.
+
+3. Tap to focus
+- Pure function that converts a tap position in the preview widget's local coordinates to the normalised (0..1) point the camera expects, correctly accounting for the preview's actual displayed size, aspect ratio, any letterboxing, and device orientation. Unit test it with several sizes and corner cases (taps at corners, outside the preview area ignored).
+- CameraCubit state holds focusIndicator (position in widget coordinates, a timestamp or id, and a phase: focusing, locked/done, failed). The cubit sets the focus and exposure point, then auto-clears the indicator after a short constant duration. A new tap replaces the previous indicator immediately.
+- If the device does not support focus points, show nothing and do not crash; surface supportsFocus in state.
+- Optional but welcome: a long-press (or double-tap) to lock focus/exposure, shown differently. Skip it if it complicates the code; tell me whether you did it.
+
+4. CameraCubit (presentation/camera/)
+- State (Equatable), as a single state class with a status enum or a sealed hierarchy (your call, justify briefly), covering: initialising, ready, permissionDenied, permissionPermanentlyDenied, noCameraAvailable, cameraInUse or unavailable (hardware failure), error with a retryable flag, capturing, plus: current lens direction, available presets, current zoom and range, flash mode, focus indicator, isCapturing, and a short-lived one-off message.
+- Methods: initialise(), requestPermission(), openAppSettings(), switchLens(), selectPreset(preset), onPinchStart/onPinchUpdate/onPinchEnd, setZoomFromSlider(value), onTapToFocus(localPosition, previewSize), cycleFlash(), capture(), retry(), and a lifecycle pair pause()/resume().
+- Capture: ignore taps while a capture is in progress; take the picture, call AddCapturedImage (which copies it into the app documents directory), then delete the temp file; on success update the batch image count through BatchCubit; on StorageFailure or low storage show a clear message and keep the camera running. Add a minimum gap between captures to avoid double triggers.
+- Lifecycle: release the camera when the app goes to background (AppLifecycleState.inactive or paused) and re-initialise on resume, using a WidgetsBindingObserver wired in the presentation layer. Make sure rapid pause/resume cycles and disposal during an in-flight initialisation never throw or leak the controller.
+- Permissions: use permission_handler for the camera permission. Handle first request, denied (explain and offer retry), permanently denied (offer to open app settings), and the user returning from settings with permission granted (re-check on resume and initialise automatically). Do not request any permission that is not needed.
+- Hardware and runtime failures to handle explicitly with typed states and messages (no raw exception text shown to users): no cameras found, camera already in use by another app, camera disconnected or runtime error while previewing, initialisation timeout, controller disposed unexpectedly, capture failure, flash not supported. Offer retry where it makes sense, with one automatic re-initialisation attempt for transient errors before showing the error state.
+- Cancel subscriptions and dispose the controller in close(), and guard against emitting after close.
+
+5. Wiring and temporary screen
+- Register CameraService and CameraCubit in get_it (factory scope for the cubit so each screen visit gets a fresh instance, with the service disposing its controller).
+- Update the temporary CameraPreviewScreen to: show the live preview, pinch and tap gestures, a slider, preset buttons, lens switch, flash button, capture button, the current batch image count, and a button that navigates to the Upload Manager. Plain styling is fine. It must display every error and permission state with the right action button.
+
+6. Tests (flutter_test, bloc_test, mocktail with a FakeCameraService)
+- ZoomPresets: single back camera with min 1.0 and max 8.0 gives 1x and 2x only; min 0.6 adds 0.5x; two back cameras adds 0.5x with a camera switch; max below 2.0 omits 2x.
+- Zoom math: clamping, pinch scaling, slider mapping round trip, preset snapping.
+- Tap-to-focus coordinate conversion, including letterboxed previews and taps outside the preview.
+- CameraCubit: initialise success; permission denied then granted; permanently denied offers settings; no camera; initialisation failure triggers one retry then error; switchLens resets zoom; capture success increments the batch count and deletes the temp file; capture ignored while capturing; storage failure shows the message and the camera stays ready; focus indicator appears then clears after the duration (use fake async); pause releases the controller and resume re-initialises; close during initialisation does not throw.
+
+7. Verification
+- Run flutter analyze (must be clean), flutter test and flutter build apk --debug. Fix failures properly, do not weaken tests.
+- Finish with a summary: API versions used, the presets heuristic and its limits, the orientation approach, assumptions, and a manual device test checklist: (1) deny permission, then allow; (2) deny permanently, open settings, return; (3) pinch, slider and preset buttons stay in sync; (4) 0.5x appears or is hidden correctly on this device; (5) tap-to-focus indicator position is correct in portrait and when the preview is letterboxed; (6) switch lens front and back; (7) background and resume the app mid-preview; (8) capture rapidly and confirm the batch count and the files saved under the app documents directory; (9) fill the device storage or simulate a storage failure if possible.
+
+Rules: no secrets in code; no microphone permission; handle every failure explicitly instead of swallowing exceptions; do not log file paths outside debug builds; keep functions small; ask me before adding any dependency.
+```

@@ -51,13 +51,13 @@ class SyncPassResult extends Equatable {
 
   @override
   List<Object?> get props => [
-        outcome,
-        uploaded,
-        failed,
-        retrying,
-        waitingForConnection,
-        skippedClaimedByOther,
-        remaining,
-        nextRetryAt,
-      ];
+    outcome,
+    uploaded,
+    failed,
+    retrying,
+    waitingForConnection,
+    skippedClaimedByOther,
+    remaining,
+    nextRetryAt,
+  ];
 }

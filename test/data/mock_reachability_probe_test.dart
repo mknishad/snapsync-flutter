@@ -38,22 +38,24 @@ void main() {
   const maxLatency = Duration(seconds: 2);
 
   group('MockReachabilityProbe', () {
-    test('success, server-error and low-bandwidth modes answer quickly',
-        () async {
-      for (final mode in [
-        MockUploadMode.alwaysSuccess,
-        MockUploadMode.alwaysServerError,
-        MockUploadMode.alwaysLowBandwidth,
-      ]) {
-        final result = await MockReachabilityProbe(config(mode)).probe();
-        expect(result.isFast(maxLatency), isTrue, reason: mode.name);
-      }
-    });
+    test(
+      'success, server-error and low-bandwidth modes answer quickly',
+      () async {
+        for (final mode in [
+          MockUploadMode.alwaysSuccess,
+          MockUploadMode.alwaysServerError,
+          MockUploadMode.alwaysLowBandwidth,
+        ]) {
+          final result = await MockReachabilityProbe(config(mode)).probe();
+          expect(result.isFast(maxLatency), isTrue, reason: mode.name);
+        }
+      },
+    );
 
     test('no internet leaves the probe unanswered', () async {
-      final result =
-          await MockReachabilityProbe(config(MockUploadMode.alwaysNoInternet))
-              .probe();
+      final result = await MockReachabilityProbe(
+        config(MockUploadMode.alwaysNoInternet),
+      ).probe();
 
       expect(result.reachable, isFalse);
     });
@@ -101,22 +103,24 @@ void main() {
       expect((await probe.probe()).reachable, isFalse);
     });
 
-    test('agrees with the mock upload API for the same configuration',
-        () async {
-      final cfg = config(MockUploadMode.alwaysNoInternet);
-      final probe = MockReachabilityProbe(cfg);
-      final api = MockUploadApi(cfg);
+    test(
+      'agrees with the mock upload API for the same configuration',
+      () async {
+        final cfg = config(MockUploadMode.alwaysNoInternet);
+        final probe = MockReachabilityProbe(cfg);
+        final api = MockUploadApi(cfg);
 
-      final probeResult = await probe.probe();
-      final upload = await api.upload(image);
+        final probeResult = await probe.probe();
+        final upload = await api.upload(image);
 
-      expect(probeResult.reachable, isFalse);
-      expect((upload as UploadFailed).failure, isA<NoInternetFailure>());
+        expect(probeResult.reachable, isFalse);
+        expect((upload as UploadFailed).failure, isA<NoInternetFailure>());
 
-      cfg.mode = MockUploadMode.alwaysSuccess;
-      expect((await probe.probe()).isFast(maxLatency), isTrue);
-      expect(await api.upload(image), isA<UploadSuccess>());
-    });
+        cfg.mode = MockUploadMode.alwaysSuccess;
+        expect((await probe.probe()).isFast(maxLatency), isTrue);
+        expect(await api.upload(image), isA<UploadSuccess>());
+      },
+    );
   });
 
   group('MockUploadConfig persistence', () {

@@ -19,11 +19,7 @@ import 'package:sqflite/sqflite.dart';
 ///   `BEGIN IMMEDIATE`, so a read-check-write sequence is serialised across
 ///   isolates.
 class DatabaseHelper {
-  DatabaseHelper({
-    this._factory,
-    this._path,
-    this.singleInstance = false,
-  });
+  DatabaseHelper({this._factory, this._path, this.singleInstance = false});
 
   final DatabaseFactory? _factory;
   final String? _path;

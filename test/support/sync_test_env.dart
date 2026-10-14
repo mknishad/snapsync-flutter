@@ -145,7 +145,7 @@ class SyncTestEnv {
 
   /// A second engine with its own connection to the same database file.
   Future<({SyncEngine engine, BatchRepositoryImpl repository})>
-      newSecondEngine({
+  newSecondEngine({
     required FakeConnectivityMonitor monitor,
     ScriptedUploadApi? uploadApi,
   }) async {
@@ -185,7 +185,8 @@ class SyncTestEnv {
     return images;
   }
 
-  Future<CapturedImage> image(String id) async => (await repository.getImage(id))!;
+  Future<CapturedImage> image(String id) async =>
+      (await repository.getImage(id))!;
 
   Future<void> dispose() async {
     for (final engine in _extraEngines) {

@@ -35,9 +35,61 @@ final class PermissionDeniedFailure extends Failure {
   List<Object?> get props => [message, permanentlyDenied];
 }
 
-/// The camera hardware is missing, in use, or failed to initialise.
+/// Why a camera operation failed. The UI maps each reason to its own text, so
+/// raw exception messages are never shown to users.
+enum CameraFailureReason {
+  /// The device reports no usable camera.
+  noCameraAvailable,
+
+  /// Another app (or another part of this app) has the camera.
+  inUse,
+
+  /// The camera was closed or disconnected, or hit a fatal error.
+  disconnected,
+
+  /// Opening the camera took too long.
+  initTimeout,
+
+  /// The platform refused camera access.
+  permission,
+
+  /// The controller was disposed while still needed.
+  disposed,
+
+  captureFailed,
+  flashUnsupported,
+  focusUnsupported,
+  zoomFailed,
+  unknown;
+
+  /// Whether re-opening the camera automatically is worth one attempt.
+  bool get isTransient => switch (this) {
+    inUse || disconnected || initTimeout || disposed || unknown => true,
+    noCameraAvailable ||
+    permission ||
+    captureFailed ||
+    flashUnsupported ||
+    focusUnsupported ||
+    zoomFailed => false,
+  };
+}
+
+/// The camera hardware is missing, in use, or failed. [message] is technical
+/// and for logs only; show [reason] to users.
 final class CameraFailure extends Failure {
-  const CameraFailure(super.message);
+  const CameraFailure(
+    super.message, {
+    this.reason = CameraFailureReason.unknown,
+  });
+
+  final CameraFailureReason reason;
+
+  /// Here "retryable" means the user may try the camera again.
+  @override
+  bool get isRetryable => reason != CameraFailureReason.noCameraAvailable;
+
+  @override
+  List<Object?> get props => [message, reason];
 }
 
 /// There is no network connection. The upload waits for connectivity and does

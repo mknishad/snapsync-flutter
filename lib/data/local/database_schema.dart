@@ -29,7 +29,8 @@ abstract final class DatabaseSchema {
   static const String colKey = 'key';
   static const String colValue = 'value';
 
-  static const String createSettingsTable = '''
+  static const String createSettingsTable =
+      '''
 CREATE TABLE $settingsTable (
   $colKey TEXT PRIMARY KEY,
   $colValue TEXT NOT NULL

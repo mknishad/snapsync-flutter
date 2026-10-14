@@ -11,8 +11,9 @@ extension BatchModelMapper on BatchModel {
     return CaptureBatch(
       id: id,
       createdAt: _fromMillis(createdAtMillis),
-      submittedAt:
-          submittedAtMillis == null ? null : _fromMillis(submittedAtMillis!),
+      submittedAt: submittedAtMillis == null
+          ? null
+          : _fromMillis(submittedAtMillis!),
       images: images,
     );
   }

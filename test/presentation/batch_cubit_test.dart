@@ -25,12 +25,12 @@ class MockRemoveImage extends Mock implements RemoveImage {}
 class MockSubmitBatch extends Mock implements SubmitBatch {}
 
 CapturedImage image(String id) => CapturedImage(
-      id: id,
-      batchId: 'b1',
-      filePath: '/fake/$id.jpg',
-      fileSizeBytes: 10,
-      capturedAt: DateTime.utc(2026),
-    );
+  id: id,
+  batchId: 'b1',
+  filePath: '/fake/$id.jpg',
+  fileSizeBytes: 10,
+  capturedAt: DateTime.utc(2026),
+);
 
 CaptureBatch batch(List<CapturedImage> images) =>
     CaptureBatch(id: 'b1', createdAt: DateTime.utc(2026), images: images);
@@ -50,12 +50,12 @@ void main() {
   late StreamController<CaptureBatch?> openBatch;
 
   BatchCubit build() => BatchCubit(
-        repository: repository,
-        addCapturedImage: addCapturedImage,
-        removeImage: removeImage,
-        submitBatchUseCase: submitBatch,
-        scheduler: scheduler,
-      );
+    repository: repository,
+    addCapturedImage: addCapturedImage,
+    removeImage: removeImage,
+    submitBatchUseCase: submitBatch,
+    scheduler: scheduler,
+  );
 
   setUp(() {
     repository = MockBatchRepository();
@@ -97,7 +97,8 @@ void main() {
       await cubit.start();
       await cubit.captureImage('/tmp/shot.jpg');
     },
-    verify: (cubit) => verify(() => addCapturedImage('/tmp/shot.jpg')).called(1),
+    verify: (cubit) =>
+        verify(() => addCapturedImage('/tmp/shot.jpg')).called(1),
   );
 
   blocTest<BatchCubit, BatchState>(

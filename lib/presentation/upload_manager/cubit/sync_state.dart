@@ -52,13 +52,13 @@ class SyncState extends Equatable {
 
   @override
   List<Object?> get props => [
-        items,
-        batches,
-        overallProgress,
-        uploadedBytes,
-        totalBytes,
-        linkQuality,
-        isPaused,
-        isSyncing,
-      ];
+    items,
+    batches,
+    overallProgress,
+    uploadedBytes,
+    totalBytes,
+    linkQuality,
+    isPaused,
+    isSyncing,
+  ];
 }

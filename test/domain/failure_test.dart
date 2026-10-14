@@ -17,10 +17,18 @@ void main() {
 
     test('server codes: 5xx, 408 and 429 retry; other 4xx do not', () {
       for (final code in [500, 502, 503, 408, 429]) {
-        expect(ServerFailure('x', code: code).isRetryable, isTrue, reason: '$code');
+        expect(
+          ServerFailure('x', code: code).isRetryable,
+          isTrue,
+          reason: '$code',
+        );
       }
       for (final code in [400, 401, 403, 404, 413, 422]) {
-        expect(ServerFailure('x', code: code).isRetryable, isFalse, reason: '$code');
+        expect(
+          ServerFailure('x', code: code).isRetryable,
+          isFalse,
+          reason: '$code',
+        );
       }
     });
   });
@@ -38,9 +46,13 @@ void main() {
   });
 
   test('failures with the same data are equal', () {
-    expect(const ServerFailure('x', code: 500), const ServerFailure('x', code: 500));
     expect(
-      const ServerFailure('x', code: 500) == const ServerFailure('x', code: 501),
+      const ServerFailure('x', code: 500),
+      const ServerFailure('x', code: 500),
+    );
+    expect(
+      const ServerFailure('x', code: 500) ==
+          const ServerFailure('x', code: 501),
       isFalse,
     );
   });

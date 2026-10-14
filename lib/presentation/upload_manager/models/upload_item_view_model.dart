@@ -23,7 +23,8 @@ class UploadItemViewModel extends Equatable {
     required int maxAttempts,
     double? liveProgress,
   }) {
-    final stamp = DateFormat('yyyyMMdd_HHmmss').format(image.capturedAt.toLocal());
+    final stamp = DateFormat('yyyyMMdd_HHmmss')
+        .format(image.capturedAt.toLocal());
     final progress = switch (image.status) {
       UploadStatus.uploaded => 1.0,
       UploadStatus.uploading => liveProgress ?? 0.0,
@@ -37,8 +38,9 @@ class UploadItemViewModel extends Equatable {
       status: image.status,
       progress: progress,
       // The file is deleted after a successful upload.
-      thumbnailPath:
-          image.status == UploadStatus.uploaded ? null : image.filePath,
+      thumbnailPath: image.status == UploadStatus.uploaded
+          ? null
+          : image.filePath,
       attemptText: image.status == UploadStatus.retrying
           ? 'Retrying... (attempt ${_nextAttempt(image, maxAttempts)}/$maxAttempts)'
           : null,
@@ -68,14 +70,14 @@ class UploadItemViewModel extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        batchId,
-        displayName,
-        sizeBytes,
-        status,
-        progress,
-        thumbnailPath,
-        attemptText,
-        lastError,
-      ];
+    id,
+    batchId,
+    displayName,
+    sizeBytes,
+    status,
+    progress,
+    thumbnailPath,
+    attemptText,
+    lastError,
+  ];
 }

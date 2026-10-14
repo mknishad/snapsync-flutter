@@ -33,23 +33,25 @@ void main() {
     for (final from in UploadStatus.values) {
       for (final to in UploadStatus.values) {
         final isLegal = legal[from]!.contains(to);
-        test('${from.name} -> ${to.name} is ${isLegal ? 'legal' : 'illegal'}',
-            () {
-          if (isLegal) {
-            expect(from.canTransitionTo(to), isTrue);
-            expect(() => from.ensureCanTransitionTo(to), returnsNormally);
-          } else {
-            expect(from.canTransitionTo(to), isFalse);
-            expect(
-              () => from.ensureCanTransitionTo(to),
-              throwsA(
-                isA<IllegalStatusTransitionError>()
-                    .having((e) => e.from, 'from', from)
-                    .having((e) => e.to, 'to', to),
-              ),
-            );
-          }
-        });
+        test(
+          '${from.name} -> ${to.name} is ${isLegal ? 'legal' : 'illegal'}',
+          () {
+            if (isLegal) {
+              expect(from.canTransitionTo(to), isTrue);
+              expect(() => from.ensureCanTransitionTo(to), returnsNormally);
+            } else {
+              expect(from.canTransitionTo(to), isFalse);
+              expect(
+                () => from.ensureCanTransitionTo(to),
+                throwsA(
+                  isA<IllegalStatusTransitionError>()
+                      .having((e) => e.from, 'from', from)
+                      .having((e) => e.to, 'to', to),
+                ),
+              );
+            }
+          },
+        );
       }
     }
 
@@ -61,13 +63,10 @@ void main() {
   });
 
   test('isUploadable covers queued, waitingForConnection and retrying', () {
-    expect(
-      UploadStatus.values.where((s) => s.isUploadable).toSet(),
-      {
-        UploadStatus.queued,
-        UploadStatus.waitingForConnection,
-        UploadStatus.retrying,
-      },
-    );
+    expect(UploadStatus.values.where((s) => s.isUploadable).toSet(), {
+      UploadStatus.queued,
+      UploadStatus.waitingForConnection,
+      UploadStatus.retrying,
+    });
   });
 }

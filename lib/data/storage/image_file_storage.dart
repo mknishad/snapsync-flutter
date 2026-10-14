@@ -23,7 +23,7 @@ class StoredImageFile {
 /// no raw [FileSystemException] escapes.
 class ImageFileStorage {
   ImageFileStorage({Future<Directory> Function()? baseDirectory})
-      : _baseDirectory = baseDirectory ?? getApplicationDocumentsDirectory;
+    : _baseDirectory = baseDirectory ?? getApplicationDocumentsDirectory;
 
   final Future<Directory> Function() _baseDirectory;
 
@@ -45,10 +45,16 @@ class ImageFileStorage {
       final directory = await _batchDirectory(batchId);
       await directory.create(recursive: true);
       final target = File(
-        p.join(directory.path, '$imageId${extension.isEmpty ? '.jpg' : extension}'),
+        p.join(
+          directory.path,
+          '$imageId${extension.isEmpty ? '.jpg' : extension}',
+        ),
       );
       await source.copy(target.path);
-      return StoredImageFile(path: target.path, sizeBytes: await target.length());
+      return StoredImageFile(
+        path: target.path,
+        sizeBytes: await target.length(),
+      );
     } on FileSystemException catch (e) {
       throw StorageFailure('Could not store the image: ${e.message}');
     }

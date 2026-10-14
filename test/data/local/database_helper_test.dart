@@ -17,9 +17,7 @@ void main() {
         'sqlite_master',
         columns: ['name'],
         where: "type IN ('table', 'index')",
-      ))
-          .map((r) => r['name']! as String)
-          .toSet();
+      )).map((r) => r['name']! as String).toSet();
 
       expect(
         names,
@@ -56,7 +54,10 @@ void main() {
       final db = await createTestDatabaseHelper().database;
       addTearDown(db.close);
 
-      await db.insert(DatabaseSchema.batchesTable, {'id': 'b', 'created_at': 0});
+      await db.insert(DatabaseSchema.batchesTable, {
+        'id': 'b',
+        'created_at': 0,
+      });
       await db.insert(DatabaseSchema.imagesTable, {
         'id': 'i',
         'batch_id': 'b',
@@ -90,8 +91,14 @@ void main() {
       addTearDown(a.close);
       addTearDown(b.close);
 
-      await a.insert(DatabaseSchema.batchesTable, {'id': 'from-a', 'created_at': 1});
-      await b.insert(DatabaseSchema.batchesTable, {'id': 'from-b', 'created_at': 2});
+      await a.insert(DatabaseSchema.batchesTable, {
+        'id': 'from-a',
+        'created_at': 1,
+      });
+      await b.insert(DatabaseSchema.batchesTable, {
+        'id': 'from-b',
+        'created_at': 2,
+      });
 
       final seenByA = (await a.query(DatabaseSchema.batchesTable)).length;
       final seenByB = (await b.query(DatabaseSchema.batchesTable)).length;
@@ -103,7 +110,10 @@ void main() {
       final db = await createTestDatabaseHelper(path: path).database;
       addTearDown(db.close);
 
-      final mode = (await db.rawQuery('PRAGMA journal_mode')).first.values.first;
+      final mode = (await db.rawQuery('PRAGMA journal_mode'))
+          .first
+          .values
+          .first;
       expect(mode, 'wal');
     });
   });

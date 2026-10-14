@@ -10,18 +10,18 @@ abstract final class AppRouter {
   static Route<void> onGenerateRoute(RouteSettings settings) {
     return switch (settings.name) {
       AppRoutes.camera => MaterialPageRoute<void>(
-          settings: settings,
-          builder: (_) => BlocProvider<CameraCubit>(
-            create: (_) => getIt<CameraCubit>(),
-            child: const CameraPreviewScreen(),
-          ),
+        settings: settings,
+        builder: (_) => BlocProvider<CameraCubit>(
+          create: (_) => getIt<CameraCubit>()..initialise(),
+          child: const CameraPreviewScreen(),
         ),
+      ),
       // The Upload Manager is the root screen and the fallback for unknown
       // routes.
       _ => MaterialPageRoute<void>(
-          settings: settings,
-          builder: (_) => const UploadManagerScreen(),
-        ),
+        settings: settings,
+        builder: (_) => const UploadManagerScreen(),
+      ),
     };
   }
 }

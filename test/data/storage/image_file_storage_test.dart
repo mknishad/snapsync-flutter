@@ -27,31 +27,29 @@ void main() {
   tearDown(() => root.deleteSync(recursive: true));
 
   group('store', () {
-    test('copies into batches/<batchId>/<imageId>.<ext> and reports the size',
-        () async {
-      final source = cameraFile('IMG_1.png');
+    test(
+      'copies into batches/<batchId>/<imageId>.<ext> and reports the size',
+      () async {
+        final source = cameraFile('IMG_1.png');
 
-      final stored = await storage.store(
-        sourcePath: source.path,
-        batchId: 'batch-1',
-        imageId: 'img-1',
-      );
+        final stored = await storage.store(
+          sourcePath: source.path,
+          batchId: 'batch-1',
+          imageId: 'img-1',
+        );
 
-      expect(
-        stored.path,
-        p.join(appDir.path, 'batches', 'batch-1', 'img-1.png'),
-      );
-      expect(stored.sizeBytes, 5);
-      expect(File(stored.path).readAsBytesSync(), [1, 2, 3, 4, 5]);
-    });
+        expect(
+          stored.path,
+          p.join(appDir.path, 'batches', 'batch-1', 'img-1.png'),
+        );
+        expect(stored.sizeBytes, 5);
+        expect(File(stored.path).readAsBytesSync(), [1, 2, 3, 4, 5]);
+      },
+    );
 
     test('leaves the source in place', () async {
       final source = cameraFile('IMG_1.jpg');
-      await storage.store(
-        sourcePath: source.path,
-        batchId: 'b',
-        imageId: 'i',
-      );
+      await storage.store(sourcePath: source.path, batchId: 'b', imageId: 'i');
       expect(source.existsSync(), isTrue);
     });
 
@@ -76,17 +74,19 @@ void main() {
       );
     });
 
-    test('an I/O error becomes a StorageFailure, not a raw exception',
-        () async {
-      // A file where the "batches" directory should be makes create() fail.
-      File(p.join(appDir.path, 'batches')).writeAsStringSync('in the way');
-      final source = cameraFile('IMG_1.jpg');
+    test(
+      'an I/O error becomes a StorageFailure, not a raw exception',
+      () async {
+        // A file where the "batches" directory should be makes create() fail.
+        File(p.join(appDir.path, 'batches')).writeAsStringSync('in the way');
+        final source = cameraFile('IMG_1.jpg');
 
-      await expectLater(
-        storage.store(sourcePath: source.path, batchId: 'b', imageId: 'i'),
-        throwsA(isA<StorageFailure>()),
-      );
-    });
+        await expectLater(
+          storage.store(sourcePath: source.path, batchId: 'b', imageId: 'i'),
+          throwsA(isA<StorageFailure>()),
+        );
+      },
+    );
 
     test('rejects identifiers that could escape the batch folder', () async {
       final source = cameraFile('IMG_1.jpg');
@@ -128,9 +128,21 @@ void main() {
 
     test('deleteBatchDirectory removes the whole batch folder', () async {
       final source = cameraFile('a.jpg');
-      final one = await storage.store(sourcePath: source.path, batchId: 'b1', imageId: 'i1');
-      final two = await storage.store(sourcePath: source.path, batchId: 'b1', imageId: 'i2');
-      final other = await storage.store(sourcePath: source.path, batchId: 'b2', imageId: 'i3');
+      final one = await storage.store(
+        sourcePath: source.path,
+        batchId: 'b1',
+        imageId: 'i1',
+      );
+      final two = await storage.store(
+        sourcePath: source.path,
+        batchId: 'b1',
+        imageId: 'i2',
+      );
+      final other = await storage.store(
+        sourcePath: source.path,
+        batchId: 'b2',
+        imageId: 'i3',
+      );
 
       await storage.deleteBatchDirectory('b1');
 

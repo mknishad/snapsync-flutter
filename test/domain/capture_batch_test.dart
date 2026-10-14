@@ -26,8 +26,10 @@ CaptureBatch batchOf(List<CapturedImage> images, {DateTime? submittedAt}) {
 void main() {
   test('isSubmitted follows submittedAt', () {
     expect(batchOf([]).isSubmitted, isFalse);
-    expect(batchOf([], submittedAt: DateTime.utc(2026, 1, 2)).isSubmitted,
-        isTrue);
+    expect(
+      batchOf([], submittedAt: DateTime.utc(2026, 1, 2)).isSubmitted,
+      isTrue,
+    );
   });
 
   test('counts and byte totals', () {
@@ -98,10 +100,8 @@ void main() {
   });
 
   group('CapturedImage.copyWith', () {
-    final base = image(UploadStatus.retrying).copyWith(
-      lastError: 'boom',
-      nextRetryAt: DateTime.utc(2026, 1, 3),
-    );
+    final base = image(UploadStatus.retrying)
+        .copyWith(lastError: 'boom', nextRetryAt: DateTime.utc(2026, 1, 3));
 
     test('null keeps the current value', () {
       final copy = base.copyWith(status: UploadStatus.uploading);

@@ -59,15 +59,15 @@ class CapturedImage extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        batchId,
-        filePath,
-        fileSizeBytes,
-        capturedAt,
-        status,
-        attemptCount,
-        lastError,
-        nextRetryAt,
-        uploadedAt,
-      ];
+    id,
+    batchId,
+    filePath,
+    fileSizeBytes,
+    capturedAt,
+    status,
+    attemptCount,
+    lastError,
+    nextRetryAt,
+    uploadedAt,
+  ];
 }

@@ -45,15 +45,18 @@ class MockUploadApi implements UploadApi {
     }
 
     return switch (outcome) {
-      MockUploadMode.alwaysSuccess ||
-      MockUploadMode.flaky =>
-        UploadSuccess(serverReference: 'mock-ref-${image.id}'),
-      MockUploadMode.alwaysNoInternet =>
-        const UploadFailed(NoInternetFailure('Mock: no internet connection')),
-      MockUploadMode.alwaysLowBandwidth =>
-        const UploadFailed(LowBandwidthFailure('Mock: upload timed out')),
-      MockUploadMode.alwaysServerError =>
-        const UploadFailed(ServerFailure('Mock: server error', code: 500)),
+      MockUploadMode.alwaysSuccess || MockUploadMode.flaky => UploadSuccess(
+        serverReference: 'mock-ref-${image.id}',
+      ),
+      MockUploadMode.alwaysNoInternet => const UploadFailed(
+        NoInternetFailure('Mock: no internet connection'),
+      ),
+      MockUploadMode.alwaysLowBandwidth => const UploadFailed(
+        LowBandwidthFailure('Mock: upload timed out'),
+      ),
+      MockUploadMode.alwaysServerError => const UploadFailed(
+        ServerFailure('Mock: server error', code: 500),
+      ),
     };
   }
 

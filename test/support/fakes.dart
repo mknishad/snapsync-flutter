@@ -93,8 +93,9 @@ class ScriptedUploadApi implements UploadApi {
 class FakeReachabilityProbe implements ReachabilityProbe {
   /// Answers handed out in order; when empty, [defaultResult] is used.
   final List<Future<ProbeResult> Function()> script = [];
-  ProbeResult defaultResult =
-      const ProbeResult.reachable(Duration(milliseconds: 50));
+  ProbeResult defaultResult = const ProbeResult.reachable(
+    Duration(milliseconds: 50),
+  );
   int probeCount = 0;
 
   @override

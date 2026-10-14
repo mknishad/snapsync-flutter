@@ -21,8 +21,9 @@ class WorkmanagerSyncScheduler implements SyncScheduler {
 
   final Workmanager _workmanager;
 
-  static final Constraints connectedConstraint =
-      Constraints(networkType: NetworkType.connected);
+  static final Constraints connectedConstraint = Constraints(
+    networkType: NetworkType.connected,
+  );
 
   @override
   Future<void> registerPeriodicSync() {

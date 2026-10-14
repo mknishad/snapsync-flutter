@@ -12,9 +12,9 @@ class ExponentialBackoff {
     required this.maxDelay,
     required this.jitterRatio,
     Random? random,
-  })  : assert(jitterRatio >= 0 && jitterRatio < 1, 'jitterRatio in [0, 1)'),
-        assert(multiplier >= 1, 'multiplier must not shrink the delay'),
-        _random = random ?? Random();
+  }) : assert(jitterRatio >= 0 && jitterRatio < 1, 'jitterRatio in [0, 1)'),
+       assert(multiplier >= 1, 'multiplier must not shrink the delay'),
+       _random = random ?? Random();
 
   final Duration baseDelay;
   final double multiplier;

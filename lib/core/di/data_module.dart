@@ -2,6 +2,8 @@ import 'dart:math';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:get_it/get_it.dart';
+import 'package:snapsync/data/camera/camera_package_service.dart';
+import 'package:snapsync/data/camera/permission_handler_camera_permissions.dart';
 import 'package:snapsync/data/connectivity/connectivity_monitor_impl.dart';
 import 'package:snapsync/data/connectivity/mock_reachability_probe.dart';
 import 'package:snapsync/data/local/daos/batch_dao.dart';
@@ -14,6 +16,8 @@ import 'package:snapsync/data/remote/mock_upload_config.dart';
 import 'package:snapsync/data/repositories/batch_repository_impl.dart';
 import 'package:snapsync/data/repositories/sync_settings_repository_impl.dart';
 import 'package:snapsync/data/storage/image_file_storage.dart';
+import 'package:snapsync/domain/camera/camera_permission_service.dart';
+import 'package:snapsync/domain/camera/camera_service.dart';
 import 'package:snapsync/domain/repositories/batch_repository.dart';
 import 'package:snapsync/domain/repositories/connectivity_monitor.dart';
 import 'package:snapsync/domain/repositories/reachability_probe.dart';
@@ -38,6 +42,12 @@ void registerDataModule(GetIt getIt) {
       () => SyncSettingsRepositoryImpl(getIt()),
     )
     ..registerLazySingleton<ImageFileStorage>(ImageFileStorage.new)
+    ..registerLazySingleton<CameraPermissionService>(
+      PermissionHandlerCameraPermissions.new,
+    )
+    // A new service per camera screen: it owns one camera controller and the
+    // cubit that receives it disposes it.
+    ..registerFactory<CameraService>(CameraPackageService.new)
     // The mock modes are stored in the database so the UI isolate and the
     // background isolate always agree.
     ..registerLazySingleton<MockUploadConfig>(
@@ -52,10 +62,8 @@ void registerDataModule(GetIt getIt) {
       () => MockReachabilityProbe(getIt<MockUploadConfig>(), random: Random()),
     )
     ..registerLazySingleton<ConnectivityMonitor>(
-      () => ConnectivityMonitorImpl(
-        connectivity: Connectivity(),
-        probe: getIt(),
-      ),
+      () =>
+          ConnectivityMonitorImpl(connectivity: Connectivity(), probe: getIt()),
     )
     ..registerLazySingleton<BatchRepository>(
       () => BatchRepositoryImpl(

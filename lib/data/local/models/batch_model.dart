@@ -22,8 +22,8 @@ class BatchModel {
   final int? submittedAtMillis;
 
   DbRow toMap() => {
-        DatabaseSchema.colId: id,
-        DatabaseSchema.colCreatedAt: createdAtMillis,
-        DatabaseSchema.colSubmittedAt: submittedAtMillis,
-      };
+    DatabaseSchema.colId: id,
+    DatabaseSchema.colCreatedAt: createdAtMillis,
+    DatabaseSchema.colSubmittedAt: submittedAtMillis,
+  };
 }
