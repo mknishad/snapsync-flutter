@@ -6,7 +6,8 @@ plugins {
 
 android {
     namespace = "com.monir.snapsync"
-    compileSdk = flutter.compileSdkVersion
+    // 37: required by permission_handler_android 14.x.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -19,7 +20,9 @@ android {
         applicationId = "com.monir.snapsync"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // 24: required by permission_handler_android (camera_android_camerax and
+        // workmanager_android need 23).
+        minSdk = 24
         targetSdk = flutter.targetSdkVersion
         // Uses the version code from pubspec.yaml. When using split APKs, 1000 * ABI_VERSION
         // is added automatically by Flutter. (https://developer.android.com/studio/build/configure-apk-splits#configure-APK-versions)

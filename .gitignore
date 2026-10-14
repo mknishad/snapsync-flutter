@@ -117,3 +117,17 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+
+# SnapSync: signing material and secrets
+*.keystore
+*.jks
+**/android/key.properties
+key.properties
+local.properties
+.env
+.env.*
+
+# SnapSync: IDE files
+.idea/
+*.iml
+.vscode/
