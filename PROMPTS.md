@@ -214,3 +214,68 @@ IMPORTANT: look up the CURRENT API of the installed camera package and permissio
 
 Rules: no secrets in code; no microphone permission; handle every failure explicitly instead of swallowing exceptions; do not log file paths outside debug builds; keep functions small; ask me before adding any dependency.
 ```
+
+## 5. Real UI for the camera and Upload Manager screens
+
+```text
+Continue on the existing "snapsync" Flutter project. Domain, data, sync and camera logic are done and tested. In this step, build the real UI for CameraPreviewScreen and UploadManagerScreen to match the attached reference mockups, replacing the temporary screens. Do not change domain, data, sync or camera logic. If the UI needs something the cubits do not expose, tell me first and make the smallest possible change.
+
+Before writing code, review the existing cubits and their states (CameraCubit, BatchCubit, SyncCubit), the theme, routes and DI, and reuse them.
+
+1. CameraPreviewScreen (match the left mockup)
+- Full-screen live preview, correctly scaled with the right aspect ratio (cover or contain, your call, but tap-to-focus must still map correctly using the existing conversion function). Dark system UI, status bar overlay handled.
+- Top row: round translucent close (X) button on the left; flash toggle (cycles modes, icon reflects the current mode) and a second small icon button on the right (use it for a grid overlay toggle, rule-of-thirds lines drawn with a CustomPainter, and say so). Hide the flash button if the camera does not support flash.
+- Vertical zoom slider on the right edge: translucent track, a thumb, the current zoom label at the top (for example "3x") and "1x" at the bottom as in the mockup; bound to the cubit's slider methods and in sync with pinch and preset buttons.
+- Row of small round zoom preset buttons above the shutter row (render the cubit's ZoomPresets list only; the selected preset is highlighted white with the label such as "1x"; unavailable presets do not appear). Show the live zoom value on the selected button while the user pinches.
+- Pinch-to-zoom over the preview via GestureDetector or Listener, plus tap-to-focus: an animated square or ring indicator at the tap point (scale-in, brief hold, fade-out) using the cubit's focusIndicator state; a different look for the locked or failed phase. The indicator must sit exactly at the tap position.
+- Bottom area: a rounded thumbnail of the most recent captured image on the left with a blue count badge (for example 12) showing the open batch's image count (hidden or empty-state when zero); a large white circular shutter button centre with a press animation and a disabled or busy state while capturing; a lens-flip button on the right. Tapping the thumbnail opens a batch review bottom sheet (see section 3).
+- Wide blue "UPLOAD BATCH (n)" button at the very bottom, disabled when the batch is empty. Tapping it submits the batch (BatchCubit.submitBatch), shows a short confirmation, and navigates to the Upload Manager.
+- A brief white flash or shutter animation on capture, and a light haptic if available without new dependencies (HapticFeedback from services).
+- Error and permission states from CameraCubit rendered full-screen over a dark background with an icon, a plain-language message and the right action button: request permission, open settings, retry, or go to Upload Manager. No raw exception text.
+- Respect the camera lifecycle already wired; do not duplicate it in widgets.
+
+2. UploadManagerScreen (match the right mockup)
+- Dark navy theme, an app bar with the title "Upload Manager", a back button, and on the right a status pill driven by link quality: green "STABLE LINK", amber "UNSTABLE", red "OFFLINE". Add a small overflow menu with the "Mock network" tools described in section 4.
+- Summary card: uppercase caption "BATCH SYNC PROGRESS", the percentage on the right, a thick rounded linear progress bar, and a line such as "2.4 MB / 3.2 MB Uploaded" (human-readable sizes via one helper with tests) plus a "PAUSE ALL" text button that switches to "RESUME ALL" when paused. Overall progress comes from SyncCubit state, bytes based.
+- Section header "PENDING UPLOADS (n)" with the count of items not yet uploaded.
+- List (ListView.builder with stable keys, separated cards) of upload items. Each card: thumbnail (decode at reduced size using ResizeImage or cacheWidth so large photos do not exhaust memory; show a placeholder if the file is missing), file name or generated label, size, and a status line with colour and icon per status:
+  - waitingForConnection: amber "WAITING FOR CONNECTION"
+  - retrying: amber "RETRYING... (ATTEMPT 2/3)" with a small next-retry hint if available
+  - uploading: blue progress bar with the percentage and, if cheaply computable, the transfer speed
+  - queued: neutral "QUEUED"
+  - failed: red "FAILED" with a Retry button and a Remove option
+  - uploaded: dimmed card with a green "SYNCED" label (and a relative time such as "2m ago")
+  Group or order items: uploading first, then retrying and waiting, queued, failed, then synced. Swipe to remove (with confirmation or undo snackbar) for items that are not currently uploading.
+- Empty state when there is nothing queued: icon, short text, and the "START NEW UPLOAD BATCH" action.
+- Bottom pinned blue "START NEW UPLOAD BATCH" button returning to the camera. 
+- Pull-to-refresh calls repository refresh via the cubit. Also call refresh on app resume using the existing observer pattern, and keep the light timer while visible.
+- Animate status changes and progress smoothly (AnimatedSwitcher, TweenAnimationBuilder) without rebuilding the entire list on every progress tick: use BlocSelector or per-item widgets so only the changing card rebuilds.
+- Snackbars for one-off messages from SyncCubit (for example "Upload resumed" or "Back online, syncing").
+
+3. Batch review bottom sheet
+- Opens from the camera thumbnail. A grid of the open batch's images with the image count, delete-per-image with a confirm, and a "Discard batch" action with confirmation. Close button. Large batches must scroll smoothly (GridView.builder, reduced-size decoding).
+
+4. Mock network tools (needed so reviewers can see the failure and recovery behaviour in the release APK, because no real API exists)
+- A bottom sheet reachable from the Upload Manager overflow menu titled "Mock network (assessment demo)" with a clearly labelled selector bound to MockUploadConfig modes: Always succeed, Offline (no internet), Low bandwidth, Server error, Flaky. Changing the mode updates the config immediately and shows what it simulates in one line each.
+- It must be obviously labelled as a demo control, unobtrusive, and available in release builds. Do not hide it behind kDebugMode. Document in a code comment that it exists because the assessment provides no API.
+
+5. Design system and quality
+- All colours, text styles, spacing and shapes come from the theme (extend with semantic colour roles for success, warning, danger, info and the surface levels). No hardcoded hex values inside widgets. Match the mockup's visual language: dark navy surfaces, blue primary, rounded cards, uppercase small caption labels with letter spacing, green STABLE LINK pill.
+- Split widgets into small files under presentation/**/widgets/ (for example zoom_slider.dart, zoom_preset_buttons.dart, focus_indicator.dart, shutter_button.dart, batch_thumbnail.dart, upload_item_card.dart, sync_summary_card.dart, link_status_pill.dart). Screens are thin and wire cubits via BlocProvider and BlocBuilder or BlocSelector; the content widgets are stateless where possible and take plain data plus callbacks so they can be tested and previewed.
+- No business logic in widgets. No setState for anything the cubits own, except purely visual animation controllers.
+- Accessibility: semantic labels for every icon button, the shutter button, zoom controls (announce zoom level), status pills and progress (announce percentage); minimum 48 dp touch targets; status never conveyed by colour alone (always an icon or text too); text scaling up to 200 percent must not overflow (use Flexible, ellipsis and wrapping deliberately).
+- Handle small screens, tall screens, landscape (camera controls reposition or the screen locks to portrait; choose one and say which), and notches or system bars via SafeArea.
+- Use const constructors where possible. No unnecessary rebuilds of the camera preview widget on zoom or focus state changes (isolate it with RepaintBoundary and selectors).
+
+6. Tests (flutter_test with bloc_test and mocktail; fake cubit states)
+- Widget tests: upload_item_card renders each status correctly (text, icon, progress, retry button only for failed); sync_summary_card shows percentage and size text and toggles PAUSE ALL and RESUME ALL; link_status_pill for each quality; zoom_preset_buttons renders only provided presets and highlights the selected one; UPLOAD BATCH button is disabled at zero and enabled otherwise and shows the count; error and permission screens show the right action buttons and call the right cubit methods; Mock network sheet changes the config mode; empty state appears when the queue is empty.
+- Unit tests for the size formatter and the relative-time formatter.
+- A test that the focus indicator is positioned at the tapped coordinates.
+- Add golden tests only for two or three stable widgets if it is cheap; otherwise skip and say so.
+
+7. Verification
+- Run flutter analyze (must be clean), flutter test and flutter build apk --debug. Fix failures properly, do not weaken tests.
+- Finish with a summary: files created, any cubit changes you had to make, assumptions, and a list of what needs on-device visual comparison against the mockups.
+
+Rules: no secrets or URLs in code; no new dependencies without asking me first (use built-in Flutter widgets and CustomPainter); do not log file paths outside debug builds; keep functions and widgets small.
+```

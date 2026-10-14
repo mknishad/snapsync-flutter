@@ -1,4 +1,5 @@
 import 'package:bloc_test/bloc_test.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:snapsync/app/app.dart';
@@ -64,8 +65,9 @@ void main() {
   testWidgets('app starts on the Upload Manager screen', (tester) async {
     await tester.pumpWidget(const SnapSyncApp());
 
-    expect(find.text('UploadManagerScreen'), findsOneWidget);
-    expect(find.text('CameraPreviewScreen'), findsNothing);
+    expect(find.text('Upload Manager'), findsOneWidget);
+    expect(find.text('Nothing to upload yet'), findsOneWidget);
+    expect(find.byIcon(Icons.flip_camera_android_rounded), findsNothing);
   });
 
   testWidgets('the shared cubits are started when the app builds', (
@@ -82,33 +84,36 @@ void main() {
   ) async {
     await tester.pumpWidget(const SnapSyncApp());
 
-    await tester.ensureVisible(find.text('START NEW UPLOAD BATCH'));
-    await tester.tap(find.text('START NEW UPLOAD BATCH'));
+    await tester.tap(find.text('START NEW UPLOAD BATCH').last);
     await tester.pumpAndSettle();
 
-    expect(find.text('CameraPreviewScreen'), findsOneWidget);
+    expect(find.byIcon(Icons.flip_camera_android_rounded), findsOneWidget);
+    expect(find.text('UPLOAD BATCH (0)'), findsOneWidget);
     expect(cameraService.openedLensIds, ['0'], reason: 'the camera was opened');
-    expect(find.text('Capture'), findsOneWidget);
   });
 
-  testWidgets('leaving the camera screen releases the camera', (tester) async {
+  testWidgets(
+    'closing the camera returns to the Upload Manager and releases it',
+    (tester) async {
+      await tester.pumpWidget(const SnapSyncApp());
+      await tester.tap(find.text('START NEW UPLOAD BATCH').last);
+      await tester.pumpAndSettle();
+      expect(cameraService.isOpen, isTrue);
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Upload Manager'), findsOneWidget);
+      expect(cameraService.isOpen, isFalse);
+    },
+  );
+
+  testWidgets('the Upload Manager shows its controls', (tester) async {
     await tester.pumpWidget(const SnapSyncApp());
-    await tester.tap(find.text('START NEW UPLOAD BATCH'));
-    await tester.pumpAndSettle();
-    expect(cameraService.isOpen, isTrue);
 
-    await tester.tap(find.text('Upload manager'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('UploadManagerScreen'), findsOneWidget);
-    expect(cameraService.isOpen, isFalse);
-  });
-
-  testWidgets('shows the raw sync state for manual testing', (tester) async {
-    await tester.pumpWidget(const SnapSyncApp());
-
-    expect(find.textContaining('link: offline'), findsOneWidget);
-    expect(find.text('No uploads yet.'), findsOneWidget);
-    expect(find.text('Pause'), findsOneWidget);
+    expect(find.text('BATCH SYNC PROGRESS'), findsOneWidget);
+    expect(find.text('PAUSE ALL'), findsOneWidget);
+    expect(find.text('PENDING UPLOADS (0)'), findsOneWidget);
+    expect(find.text('OFFLINE'), findsOneWidget);
   });
 }

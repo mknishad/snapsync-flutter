@@ -99,4 +99,42 @@ void main() {
     expect(item.lastError, 'rejected');
     expect(item.batchId, 'b1');
   });
+
+  group('retry and sync times', () {
+    final retryAt = DateTime.utc(2026, 4, 1, 9, 10);
+    final doneAt = DateTime.utc(2026, 4, 1, 9, 6);
+
+    test('are carried through for the card to format', () {
+      final item = map(
+        image(UploadStatus.retrying)
+            .copyWith(nextRetryAt: retryAt, uploadedAt: doneAt),
+      );
+
+      expect(item.nextRetryAt, retryAt);
+      expect(item.uploadedAt, doneAt);
+    });
+
+    test('are null when the image has none', () {
+      final item = map(image(UploadStatus.queued));
+
+      expect(item.nextRetryAt, isNull);
+      expect(item.uploadedAt, isNull);
+    });
+
+    test('take part in equality, so a changed time rebuilds the card', () {
+      final a = map(
+        image(UploadStatus.retrying).copyWith(nextRetryAt: retryAt),
+      );
+      final b = map(
+        image(UploadStatus.retrying)
+            .copyWith(nextRetryAt: retryAt.add(const Duration(seconds: 1))),
+      );
+
+      expect(a, isNot(b));
+      expect(
+        a,
+        map(image(UploadStatus.retrying).copyWith(nextRetryAt: retryAt)),
+      );
+    });
+  });
 }

@@ -131,6 +131,54 @@ void main() {
     verify: (cubit) => verify(() => removeImage('a')).called(1),
   );
 
+  group('discardBatch', () {
+    blocTest<BatchCubit, BatchState>(
+      'deletes the open batch through the repository',
+      build: () {
+        when(() => repository.deleteBatch('b1')).thenAnswer((_) async {});
+        return build();
+      },
+      act: (cubit) async {
+        await cubit.start();
+        openBatch.add(batch([image('a'), image('b')]));
+        await settle();
+
+        await cubit.discardBatch();
+      },
+      verify: (cubit) => verify(() => repository.deleteBatch('b1')).called(1),
+    );
+
+    blocTest<BatchCubit, BatchState>(
+      'does nothing when there is no batch',
+      build: build,
+      act: (cubit) async {
+        await cubit.start();
+        await cubit.discardBatch();
+      },
+      verify: (cubit) => verifyNever(() => repository.deleteBatch(any())),
+    );
+
+    blocTest<BatchCubit, BatchState>(
+      'a failure is reported in state',
+      build: () {
+        when(() => repository.deleteBatch(any()))
+            .thenThrow(const StorageFailure('locked'));
+        return build();
+      },
+      act: (cubit) async {
+        await cubit.start();
+        openBatch.add(batch([image('a')]));
+        await settle();
+
+        await cubit.discardBatch();
+      },
+      verify: (cubit) {
+        expect(cubit.state.status, BatchStatus.failure);
+        expect(cubit.state.failure, const StorageFailure('locked'));
+      },
+    );
+  });
+
   group('submitBatch', () {
     blocTest<BatchCubit, BatchState>(
       'submits the open batch, then enqueues one background sync',

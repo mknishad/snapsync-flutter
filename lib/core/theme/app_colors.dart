@@ -6,6 +6,7 @@ abstract final class AppColors {
   // Surfaces
   static const Color background = Color(0xFF0A1020);
   static const Color surface = Color(0xFF111A2E);
+  static const Color surfaceLow = Color(0xFF0D1526);
   static const Color surfaceHigh = Color(0xFF1A2540);
   static const Color outline = Color(0xFF26324D);
 
@@ -26,4 +27,15 @@ abstract final class AppColors {
 
   /// Failed.
   static const Color error = Color(0xFFEF4444);
+
+  /// Informational and in-progress (uploading). Same blue as the accent.
+  static const Color info = primary;
+
+  // Camera overlays: translucent controls drawn over the live preview.
+  static const Color overlay = Color(0x66000000);
+  static const Color overlayStrong = Color(0xB3000000);
+  static const Color onOverlay = Color(0xFFFFFFFF);
+
+  /// Behind the live preview (letterbox bars are this colour).
+  static const Color cameraBackground = Color(0xFF000000);
 }

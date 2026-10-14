@@ -56,6 +56,14 @@ class BatchCubit extends Cubit<BatchState> {
     return _guard(() => removeImage(imageId));
   }
 
+  /// Throws away the open batch and all its photos (the review sheet's
+  /// "Discard batch").
+  Future<void> discardBatch() {
+    final batch = state.currentBatch;
+    if (batch == null) return Future<void>.value();
+    return _guard(() => repository.deleteBatch(batch.id));
+  }
+
   /// Submits the open batch, then asks for a background sync so the upload
   /// continues even if the app goes away.
   Future<void> submitBatch() async {

@@ -16,6 +16,8 @@ class UploadItemViewModel extends Equatable {
     this.thumbnailPath,
     this.attemptText,
     this.lastError,
+    this.nextRetryAt,
+    this.uploadedAt,
   });
 
   factory UploadItemViewModel.fromImage(
@@ -45,6 +47,8 @@ class UploadItemViewModel extends Equatable {
           ? 'Retrying... (attempt ${_nextAttempt(image, maxAttempts)}/$maxAttempts)'
           : null,
       lastError: image.lastError,
+      nextRetryAt: image.nextRetryAt,
+      uploadedAt: image.uploadedAt,
     );
   }
 
@@ -68,6 +72,12 @@ class UploadItemViewModel extends Equatable {
   final String? attemptText;
   final String? lastError;
 
+  /// When the next retry is due, for the "retry in 25s" hint.
+  final DateTime? nextRetryAt;
+
+  /// When the upload finished, for "synced 2m ago".
+  final DateTime? uploadedAt;
+
   @override
   List<Object?> get props => [
     id,
@@ -79,5 +89,7 @@ class UploadItemViewModel extends Equatable {
     thumbnailPath,
     attemptText,
     lastError,
+    nextRetryAt,
+    uploadedAt,
   ];
 }
