@@ -1,0 +1,11 @@
+# Copy this file to android/key.properties (which is gitignored) and fill in
+# your own values. Never commit key.properties or the keystore itself.
+#
+# storeFile is relative to android/app, or an absolute path.
+# The same four values can instead be supplied as the environment variables
+# SNAPSYNC_KEYSTORE_FILE, SNAPSYNC_KEYSTORE_PASSWORD, SNAPSYNC_KEY_ALIAS and
+# SNAPSYNC_KEY_PASSWORD.
+storeFile=/path/to/your-release-keystore.jks
+storePassword=<keystore-password>
+keyAlias=<key-alias>
+keyPassword=<key-password>

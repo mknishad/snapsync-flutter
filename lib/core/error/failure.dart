@@ -21,20 +21,6 @@ sealed class Failure extends Equatable implements Exception {
   List<Object?> get props => [message];
 }
 
-/// A required runtime permission (camera) was denied.
-final class PermissionDeniedFailure extends Failure {
-  const PermissionDeniedFailure(
-    super.message, {
-    this.permanentlyDenied = false,
-  });
-
-  /// When true the user must enable the permission from system settings.
-  final bool permanentlyDenied;
-
-  @override
-  List<Object?> get props => [message, permanentlyDenied];
-}
-
 /// Why a camera operation failed. The UI maps each reason to its own text, so
 /// raw exception messages are never shown to users.
 enum CameraFailureReason {

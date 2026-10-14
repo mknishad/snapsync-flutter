@@ -6,6 +6,11 @@
     <!-- The camera plugin declares the microphone permission, but SnapSync
          takes photos only (audio is disabled), so it is removed. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
+    <!-- Declared by the camera and workmanager plugins but not used. Photos are
+         written to the app's own storage, and no notifications are posted. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" tools:node="remove"/>
 
     <application
         android:label="SnapSync"
