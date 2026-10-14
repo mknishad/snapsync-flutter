@@ -3,7 +3,7 @@ import 'package:snapsync/domain/repositories/batch_repository.dart';
 /// Requeues images left in `uploading` by a process that was killed mid-upload.
 ///
 /// Call it on app start and at the start of every background task. Pass
-/// `AppConstants.interruptedUploadTimeout` from a background task so an upload
+/// `AppConstants.uploadClaimTimeout` from a background task so an upload
 /// that is genuinely running in another isolate is not requeued; the default
 /// (zero) resets every `uploading` image and suits a cold app start.
 class RecoverInterruptedUploads {

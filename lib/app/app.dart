@@ -14,10 +14,18 @@ class SnapSyncApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // BatchCubit and SyncCubit are shared by both screens, so they live here.
+    // They are created eagerly: the sync cubit must watch connectivity and run
+    // passes from app start, not from the first time a widget reads it.
     return MultiBlocProvider(
       providers: [
-        BlocProvider<BatchCubit>(create: (_) => getIt<BatchCubit>()),
-        BlocProvider<SyncCubit>(create: (_) => getIt<SyncCubit>()),
+        BlocProvider<BatchCubit>(
+          lazy: false,
+          create: (_) => getIt<BatchCubit>()..start(),
+        ),
+        BlocProvider<SyncCubit>(
+          lazy: false,
+          create: (_) => getIt<SyncCubit>()..start(),
+        ),
       ],
       child: MaterialApp(
         title: AppConstants.appName,

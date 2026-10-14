@@ -1,37 +1,27 @@
-import 'package:snapsync/background/task_names.dart';
-import 'package:snapsync/core/constants/app_constants.dart';
+import 'package:flutter/widgets.dart';
+import 'package:snapsync/background/background_sync_runner.dart';
 import 'package:snapsync/core/di/injection.dart';
-import 'package:snapsync/core/error/failure.dart';
-import 'package:snapsync/domain/usecases/recover_interrupted_uploads.dart';
+import 'package:snapsync/domain/services/sync_engine.dart';
 import 'package:workmanager/workmanager.dart';
 
 /// Entry point invoked by the OS for every scheduled task. Must stay a
 /// top-level function.
+///
+/// Runs in a separate isolate (or, for one-off work, possibly on the main
+/// engine), so it builds its own dependencies instead of relying on anything
+/// the UI isolate created.
 @pragma('vm:entry-point')
 void callbackDispatcher() {
-  Workmanager().executeTask((taskName, inputData) async {
-    await configureBackgroundDependencies();
+  WidgetsFlutterBinding.ensureInitialized();
 
-    try {
-      // Only requeue uploads old enough to belong to a dead process; one that
-      // is running in the UI isolate right now must be left alone.
-      await getIt<RecoverInterruptedUploads>()(
-        staleAfter: AppConstants.interruptedUploadTimeout,
-      );
-    } on Failure {
-      // The database is unavailable, so there is nothing this task can do.
-      // Ask workmanager to retry it with its own backoff.
-      return false;
-    }
-
-    switch (taskName) {
-      case TaskNames.periodicSyncTask:
-      case TaskNames.oneOffSyncTask:
-        // TODO: resolve SyncPendingUploads from getIt and run it. Return
-        // false when uploads should be retried by workmanager's backoff.
-        return true;
-      default:
-        return true;
-    }
-  });
+  Workmanager().executeTask(
+    (taskName, inputData) async {
+      await configureBackgroundDependencies();
+      return BackgroundSyncRunner(getIt<SyncEngine>()).run(taskName);
+    },
+    onTaskStopped: (taskName, stopReason) async {
+      await configureBackgroundDependencies();
+      await BackgroundSyncRunner(getIt<SyncEngine>()).onStopped();
+    },
+  );
 }

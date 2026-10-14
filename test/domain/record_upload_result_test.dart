@@ -172,6 +172,37 @@ void main() {
     );
   });
 
+  group('returns the status the image ended in', () {
+    test('uploaded, retrying, failed and waitingForConnection', () async {
+      expect(
+        await useCase(uploading(), const UploadSuccess(serverReference: 'r')),
+        UploadStatus.uploaded,
+      );
+      expect(
+        await useCase(uploading(), const UploadFailed(LowBandwidthFailure('s'))),
+        UploadStatus.retrying,
+      );
+      expect(
+        await useCase(
+          uploading(attempts: 2),
+          const UploadFailed(LowBandwidthFailure('s')),
+        ),
+        UploadStatus.failed,
+      );
+      expect(
+        await useCase(
+          uploading(),
+          const UploadFailed(ServerFailure('x', code: 404)),
+        ),
+        UploadStatus.failed,
+      );
+      expect(
+        await useCase(uploading(), const UploadFailed(NoInternetFailure('o'))),
+        UploadStatus.waitingForConnection,
+      );
+    });
+  });
+
   test('an illegal transition from the repository is not swallowed', () async {
     when(
       () => repository.updateImageStatus(

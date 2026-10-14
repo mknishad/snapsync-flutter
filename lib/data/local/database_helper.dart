@@ -71,9 +71,16 @@ class DatabaseHelper {
     await batch.commit(noResult: true);
   }
 
-  /// Add one `if (oldVersion < N)` block per schema version, each performing
-  /// its changes in order, and bump `AppConstants.databaseVersion`.
+  /// One `if (oldVersion < N)` block per schema version, run in order, so any
+  /// older database reaches the current schema. Bump
+  /// `AppConstants.databaseVersion` when adding one.
+  ///
+  /// - v2: the `settings` key-value table (pause flag, mock mode).
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // No migrations yet: version 1 is the first schema.
+    final batch = db.batch();
+    if (oldVersion < 2) {
+      DatabaseSchema.upgradeToV2.forEach(batch.execute);
+    }
+    await batch.commit(noResult: true);
   }
 }

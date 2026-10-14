@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:snapsync/core/error/failure.dart';
 import 'package:snapsync/core/utils/clock.dart';
+import 'package:snapsync/core/utils/safe_log.dart';
 import 'package:snapsync/data/local/daos/batch_dao.dart';
 import 'package:snapsync/data/local/daos/image_dao.dart';
 import 'package:snapsync/data/local/database_helper.dart';
@@ -173,6 +173,52 @@ class BatchRepositoryImpl implements BatchRepository {
   }
 
   @override
+  Future<List<CapturedImage>> getUnfinished() {
+    return _guard(() async {
+      final db = await databaseHelper.database;
+      final models = await imageDao.getUnfinished(db);
+      return models.map((m) => m.toEntity()).toList();
+    });
+  }
+
+  @override
+  Future<CapturedImage?> claimImage(String imageId) {
+    return _guard(() async {
+      final db = await databaseHelper.database;
+      final claimed = await imageDao.claim(
+        db,
+        imageId,
+        _now().millisecondsSinceEpoch,
+      );
+      if (!claimed) return null;
+      _notify();
+      final model = await imageDao.getById(db, imageId);
+      return model?.toEntity();
+    });
+  }
+
+  @override
+  Future<void> renewClaim(String imageId) {
+    return _guard(() async {
+      final db = await databaseHelper.database;
+      await imageDao.renewClaim(db, imageId, _now().millisecondsSinceEpoch);
+    });
+  }
+
+  @override
+  Future<int> markWaitingForConnection() {
+    return _guard(() async {
+      final db = await databaseHelper.database;
+      final count = await imageDao.markWaitingForConnection(
+        db,
+        _now().millisecondsSinceEpoch,
+      );
+      if (count > 0) _notify();
+      return count;
+    });
+  }
+
+  @override
   Future<void> updateImageStatus({
     required String imageId,
     required UploadStatus status,
@@ -339,10 +385,10 @@ class BatchRepositoryImpl implements BatchRepository {
     try {
       await storage.deleteFile(path);
     } on Failure catch (failure) {
-      developer.log(
-        'Could not delete $path: ${failure.message}',
-        name: 'snapsync.storage',
-        level: 900,
+      logProblem(
+        'snapsync.storage',
+        'Could not delete a stored file',
+        error: failure,
       );
     }
   }

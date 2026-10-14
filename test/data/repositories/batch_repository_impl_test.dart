@@ -537,6 +537,201 @@ void main() {
     });
   });
 
+
+  group('claimImage', () {
+    test('moves a queued image to uploading and returns it', () async {
+      final (_, images) = await submittedBatch(1);
+
+      final claimed = await repository.claimImage(images.single.id);
+
+      expect(claimed, isNotNull);
+      expect(claimed!.status, UploadStatus.uploading);
+      expect(claimed.id, images.single.id);
+      expect((await repository.getImage(images.single.id))!.status,
+          UploadStatus.uploading);
+    });
+
+    test('a second claim of the same image fails', () async {
+      final (_, images) = await submittedBatch(1);
+
+      expect(await repository.claimImage(images.single.id), isNotNull);
+      expect(await repository.claimImage(images.single.id), isNull);
+    });
+
+    test('works for waitingForConnection and a due retrying image', () async {
+      final (_, images) = await submittedBatch(2);
+      await repository.updateImageStatus(
+        imageId: images[0].id,
+        status: UploadStatus.waitingForConnection,
+        attemptCount: 0,
+      );
+      await toUploading(images[1].id);
+      await repository.updateImageStatus(
+        imageId: images[1].id,
+        status: UploadStatus.retrying,
+        attemptCount: 1,
+        nextRetryAt: now.add(const Duration(seconds: 30)),
+      );
+
+      expect(await repository.claimImage(images[0].id), isNotNull);
+      expect(await repository.claimImage(images[1].id), isNull,
+          reason: 'retry not due yet');
+      advance(const Duration(seconds: 31));
+      expect(await repository.claimImage(images[1].id), isNotNull);
+    });
+
+    test('refuses images that are uploaded, failed or in an open batch',
+        () async {
+      final open = await addImage(name: 'open.jpg');
+      expect(await repository.claimImage(open.id), isNull);
+
+      final (_, images) = await submittedBatch(2);
+      await toUploading(images[0].id);
+      await repository.markUploaded(images[0].id);
+      await toUploading(images[1].id);
+      await repository.updateImageStatus(
+        imageId: images[1].id,
+        status: UploadStatus.failed,
+        attemptCount: 3,
+      );
+
+      expect(await repository.claimImage(images[0].id), isNull);
+      expect(await repository.claimImage(images[1].id), isNull);
+    });
+
+    test('an unknown image cannot be claimed', () async {
+      expect(await repository.claimImage('ghost'), isNull);
+    });
+  });
+
+  group('renewClaim', () {
+    Future<int> updatedAt(String id) async {
+      final rows = await db.query(
+        DatabaseSchema.imagesTable,
+        columns: ['updated_at'],
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      return rows.single['updated_at']! as int;
+    }
+
+    test('refreshes the timestamp of an uploading image', () async {
+      final (_, images) = await submittedBatch(1);
+      await repository.claimImage(images.single.id);
+      final before = await updatedAt(images.single.id);
+
+      advance(const Duration(minutes: 1));
+      await repository.renewClaim(images.single.id);
+
+      expect(await updatedAt(images.single.id), before + 60000);
+    });
+
+    test('does nothing for an image that is no longer uploading', () async {
+      final (_, images) = await submittedBatch(1);
+      final before = await updatedAt(images.single.id);
+
+      advance(const Duration(minutes: 1));
+      await repository.renewClaim(images.single.id);
+
+      expect(await updatedAt(images.single.id), before);
+    });
+
+    test('a renewed claim is not requeued by the staleness window', () async {
+      final (_, images) = await submittedBatch(1);
+      await repository.claimImage(images.single.id);
+      advance(const Duration(minutes: 8));
+      await repository.renewClaim(images.single.id);
+      advance(const Duration(minutes: 3));
+
+      final reset = await repository.resetInterruptedUploads(
+        staleAfter: const Duration(minutes: 5),
+      );
+
+      expect(reset, 0);
+      expect((await repository.getImage(images.single.id))!.status,
+          UploadStatus.uploading);
+    });
+  });
+
+  group('markWaitingForConnection', () {
+    test('moves queued and retrying images, keeps retry times', () async {
+      final (_, images) = await submittedBatch(4);
+      final retryAt = now.add(const Duration(minutes: 1));
+      await toUploading(images[1].id);
+      await repository.updateImageStatus(
+        imageId: images[1].id,
+        status: UploadStatus.retrying,
+        attemptCount: 1,
+        nextRetryAt: retryAt,
+      );
+      await toUploading(images[2].id); // stays uploading
+      await toUploading(images[3].id);
+      await repository.markUploaded(images[3].id); // stays uploaded
+
+      final changed = await repository.markWaitingForConnection();
+
+      expect(changed, 2);
+      final queued = (await repository.getImage(images[0].id))!;
+      final retrying = (await repository.getImage(images[1].id))!;
+      expect(queued.status, UploadStatus.waitingForConnection);
+      expect(retrying.status, UploadStatus.waitingForConnection);
+      expect(retrying.nextRetryAt, retryAt);
+      expect(retrying.attemptCount, 1);
+      expect((await repository.getImage(images[2].id))!.status,
+          UploadStatus.uploading);
+      expect((await repository.getImage(images[3].id))!.status,
+          UploadStatus.uploaded);
+    });
+
+    test('ignores images in an open batch', () async {
+      final open = await addImage();
+
+      expect(await repository.markWaitingForConnection(), 0);
+      expect((await repository.getImage(open.id))!.status, UploadStatus.queued);
+    });
+
+    test('notifies the watch streams', () async {
+      await submittedBatch(1);
+      final emissions = <List<CaptureBatch>>[];
+      final sub = repository.watchSubmittedBatches().listen(emissions.add);
+      addTearDown(sub.cancel);
+      await eventually(() => emissions.isNotEmpty);
+
+      await repository.markWaitingForConnection();
+
+      await eventually(
+        () => emissions.last.single.images.single.status ==
+            UploadStatus.waitingForConnection,
+      );
+    });
+  });
+
+  group('getUnfinished', () {
+    test('lists queued, waiting, uploading and retrying images only',
+        () async {
+      final (_, images) = await submittedBatch(5);
+      await repository.updateImageStatus(
+        imageId: images[1].id,
+        status: UploadStatus.waitingForConnection,
+        attemptCount: 0,
+      );
+      await toUploading(images[2].id);
+      await toUploading(images[3].id);
+      await repository.markUploaded(images[3].id);
+      await toUploading(images[4].id);
+      await repository.updateImageStatus(
+        imageId: images[4].id,
+        status: UploadStatus.failed,
+        attemptCount: 3,
+      );
+      await addImage(name: 'open.jpg'); // open batch: excluded
+
+      final ids = (await repository.getUnfinished()).map((i) => i.id);
+
+      expect(ids, [images[0].id, images[1].id, images[2].id]);
+    });
+  });
+
   group('watch streams and refresh', () {
     test('watchOpenBatch emits null, then updates as images are added',
         () async {

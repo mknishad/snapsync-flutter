@@ -45,6 +45,23 @@ abstract interface class BatchRepository {
     DateTime? nextRetryAt,
   });
 
+  /// Images of submitted batches that are not finished (queued, waiting,
+  /// uploading or retrying), oldest first.
+  Future<List<CapturedImage>> getUnfinished();
+
+  /// Atomically takes the image for upload by moving it to `uploading`.
+  /// Returns the claimed image, or null if it is no longer uploadable, not yet
+  /// due, or another isolate claimed it first. This is what guarantees an
+  /// image is never uploaded twice.
+  Future<CapturedImage?> claimImage(String imageId);
+
+  /// Keeps a claim alive while its upload is still running.
+  Future<void> renewClaim(String imageId);
+
+  /// Marks queued and retrying images as waiting for a connection, so the
+  /// queue shows why nothing is moving. Returns how many were changed.
+  Future<int> markWaitingForConnection();
+
   /// Marks the image uploaded, deletes its local file and keeps its row as
   /// synced history.
   Future<void> markUploaded(String imageId);

@@ -32,16 +32,21 @@ class RecordUploadResult {
   final Clock now;
   final int maxAttempts;
 
-  /// Always reports problems through the returned future, never by throwing
-  /// synchronously.
-  Future<void> call(CapturedImage image, UploadResult result) async {
-    await switch (result) {
-      UploadSuccess() => repository.markUploaded(image.id),
-      UploadFailed(:final failure) => _recordFailure(image, failure),
+  /// Returns the status the image ended in. Always reports problems through
+  /// the returned future, never by throwing synchronously.
+  Future<UploadStatus> call(CapturedImage image, UploadResult result) async {
+    return switch (result) {
+      UploadSuccess() => _recordSuccess(image),
+      UploadFailed(:final failure) => await _recordFailure(image, failure),
     };
   }
 
-  Future<void> _recordFailure(CapturedImage image, Failure failure) {
+  Future<UploadStatus> _recordSuccess(CapturedImage image) async {
+    await repository.markUploaded(image.id);
+    return UploadStatus.uploaded;
+  }
+
+  Future<UploadStatus> _recordFailure(CapturedImage image, Failure failure) {
     if (!failure.isRetryable) {
       return _update(image, UploadStatus.failed, image.attemptCount, failure);
     }
@@ -67,19 +72,20 @@ class RecordUploadResult {
     );
   }
 
-  Future<void> _update(
+  Future<UploadStatus> _update(
     CapturedImage image,
     UploadStatus status,
     int attempts,
     Failure failure, {
     DateTime? nextRetryAt,
-  }) {
-    return repository.updateImageStatus(
+  }) async {
+    await repository.updateImageStatus(
       imageId: image.id,
       status: status,
       attemptCount: attempts,
       lastError: failure.message,
       nextRetryAt: nextRetryAt,
     );
+    return status;
   }
 }

@@ -37,16 +37,22 @@ class ImageDao {
     return rows.map(CapturedImageModel.fromMap).toList();
   }
 
+  static String get _uploadableStatuses => UploadStatus.values
+      .where((s) => s.isUploadable)
+      .map((s) => "'${s.name}'")
+      .join(', ');
+
+  static const _submittedBatchIds =
+      'SELECT ${DatabaseSchema.colId} FROM ${DatabaseSchema.batchesTable} '
+      'WHERE ${DatabaseSchema.colSubmittedAt} IS NOT NULL';
+
   /// Uploadable images of submitted batches that are due at [nowMillis],
   /// oldest capture first.
   Future<List<CapturedImageModel>> getUploadable(
     DatabaseExecutor db,
     int nowMillis,
   ) async {
-    final statuses = UploadStatus.values
-        .where((s) => s.isUploadable)
-        .map((s) => "'${s.name}'")
-        .join(', ');
+    final statuses = _uploadableStatuses;
     final rows = await db.rawQuery(
       '''
 SELECT i.* FROM ${DatabaseSchema.imagesTable} i
@@ -61,6 +67,77 @@ ORDER BY i.${DatabaseSchema.colCapturedAt} ASC, i.${DatabaseSchema.colId}
       [nowMillis],
     );
     return rows.map(CapturedImageModel.fromMap).toList();
+  }
+
+  /// Images of submitted batches that are not finished: queued, waiting,
+  /// uploading or retrying.
+  Future<List<CapturedImageModel>> getUnfinished(DatabaseExecutor db) async {
+    final statuses = [
+      ...UploadStatus.values.where((s) => s.isUploadable),
+      UploadStatus.uploading,
+    ].map((s) => "'${s.name}'").join(', ');
+    final rows = await db.query(
+      _table,
+      where: '${DatabaseSchema.colStatus} IN ($statuses) '
+          'AND ${DatabaseSchema.colBatchId} IN ($_submittedBatchIds)',
+      orderBy: '${DatabaseSchema.colCapturedAt} ASC, ${DatabaseSchema.colId}',
+    );
+    return rows.map(CapturedImageModel.fromMap).toList();
+  }
+
+  /// Atomically takes an image for upload. One SQL statement, so when two
+  /// isolates race for the same image exactly one sees a changed row.
+  /// Succeeds only if the image is still uploadable, due, and in a submitted
+  /// batch. Returns true when this caller now owns it.
+  Future<bool> claim(DatabaseExecutor db, String id, int nowMillis) async {
+    final changed = await db.rawUpdate(
+      '''
+UPDATE $_table
+SET ${DatabaseSchema.colStatus} = ?, ${DatabaseSchema.colUpdatedAt} = ?
+WHERE ${DatabaseSchema.colId} = ?
+  AND ${DatabaseSchema.colStatus} IN ($_uploadableStatuses)
+  AND (${DatabaseSchema.colNextRetryAt} IS NULL
+       OR ${DatabaseSchema.colNextRetryAt} <= ?)
+  AND ${DatabaseSchema.colBatchId} IN ($_submittedBatchIds)
+''',
+      [UploadStatus.uploading.name, nowMillis, id, nowMillis],
+    );
+    return changed == 1;
+  }
+
+  /// Refreshes the claim timestamp of an image that is still uploading, so a
+  /// long upload is not mistaken for an abandoned one. Returns false when the
+  /// image is no longer uploading.
+  Future<bool> renewClaim(DatabaseExecutor db, String id, int nowMillis) async {
+    final changed = await db.update(
+      _table,
+      {DatabaseSchema.colUpdatedAt: nowMillis},
+      where: '${DatabaseSchema.colId} = ? AND ${DatabaseSchema.colStatus} = ?',
+      whereArgs: [id, UploadStatus.uploading.name],
+    );
+    return changed == 1;
+  }
+
+  /// Marks queued and retrying images of submitted batches as waiting for a
+  /// connection. Their retry times are kept. Returns the number changed.
+  Future<int> markWaitingForConnection(
+    DatabaseExecutor db,
+    int nowMillis,
+  ) {
+    return db.rawUpdate(
+      '''
+UPDATE $_table
+SET ${DatabaseSchema.colStatus} = ?, ${DatabaseSchema.colUpdatedAt} = ?
+WHERE ${DatabaseSchema.colStatus} IN (?, ?)
+  AND ${DatabaseSchema.colBatchId} IN ($_submittedBatchIds)
+''',
+      [
+        UploadStatus.waitingForConnection.name,
+        nowMillis,
+        UploadStatus.queued.name,
+        UploadStatus.retrying.name,
+      ],
+    );
   }
 
   /// Writes the status and the retry bookkeeping together. A null

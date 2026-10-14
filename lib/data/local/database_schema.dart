@@ -24,6 +24,22 @@ abstract final class DatabaseSchema {
   /// one left behind by a killed process; not part of the domain entity.
   static const String colUpdatedAt = 'updated_at';
 
+  // settings (small key-value store shared by both isolates)
+  static const String settingsTable = 'settings';
+  static const String colKey = 'key';
+  static const String colValue = 'value';
+
+  static const String createSettingsTable = '''
+CREATE TABLE $settingsTable (
+  $colKey TEXT PRIMARY KEY,
+  $colValue TEXT NOT NULL
+)''';
+
+  /// Statements that take a version 1 database to version 2. Add a similar
+  /// list for each later version and run it from `DatabaseHelper._onUpgrade`.
+  static const List<String> upgradeToV2 = [createSettingsTable];
+
+  /// The schema for a fresh install (the current version).
   static const List<String> createStatements = [
     '''
 CREATE TABLE $batchesTable (
@@ -48,5 +64,6 @@ CREATE TABLE $imagesTable (
     'CREATE INDEX idx_images_batch_id ON $imagesTable($colBatchId)',
     'CREATE INDEX idx_images_status ON $imagesTable($colStatus)',
     'CREATE INDEX idx_images_next_retry_at ON $imagesTable($colNextRetryAt)',
+    createSettingsTable,
   ];
 }

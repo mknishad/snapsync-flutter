@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:snapsync/core/di/background_module.dart';
 import 'package:snapsync/core/di/data_module.dart';
 import 'package:snapsync/core/di/domain_module.dart';
 import 'package:snapsync/core/di/presentation_module.dart';
@@ -9,10 +10,12 @@ final GetIt getIt = GetIt.instance;
 Future<void> configureDependencies() async {
   registerDataModule(getIt);
   registerDomainModule(getIt);
+  registerBackgroundModule(getIt);
   registerPresentationModule(getIt);
 }
 
-/// Registers only what background work needs (no cubits or widgets).
+/// Registers only what background work needs (no cubits, widgets or
+/// scheduler).
 ///
 /// The background isolate does not share [getIt] state with the UI isolate, so
 /// the workmanager callback must call this itself. Workmanager can also run

@@ -24,7 +24,7 @@ class MockUploadApi implements UploadApi {
     CapturedImage image, {
     void Function(double progress)? onProgress,
   }) async {
-    final outcome = _decideOutcome();
+    final outcome = await _decideOutcome();
     final steps = max(config.progressSteps, 1);
     final stepDelay = _latency() ~/ steps;
 
@@ -59,8 +59,9 @@ class MockUploadApi implements UploadApi {
 
   /// Resolves the configured mode to a concrete outcome. For `flaky` that is
   /// one random draw: success, or one of the failure modes.
-  MockUploadMode _decideOutcome() {
-    if (config.mode != MockUploadMode.flaky) return config.mode;
+  Future<MockUploadMode> _decideOutcome() async {
+    final mode = await config.currentMode();
+    if (mode != MockUploadMode.flaky) return mode;
     if (_random.nextDouble() < config.flakySuccessProbability) {
       return MockUploadMode.flaky;
     }

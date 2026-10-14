@@ -97,3 +97,63 @@ Before writing code, review the existing folder structure, entities, interfaces 
 
 Rules: no secrets or URLs in code; handle every failure explicitly instead of swallowing exceptions; keep functions small; ask me before adding any dependency other than sqflite_common_ffi.
 ```
+
+## 3. Sync engine, connectivity, background scheduling and SyncCubit
+
+```text
+Continue on the existing "snapsync" Flutter project. Domain and data layers are done and tested. In this step, implement the SYNC ENGINE: upload orchestration, connectivity monitoring, Workmanager background scheduling and the SyncCubit. Do not build the real UI or touch the camera yet (the Upload Manager placeholder may display raw state for manual testing).
+
+Before writing code, review the existing entities, repositories, use cases, constants, DI setup and the background/ folder, and reuse them. Tell me if you need to change any earlier decision.
+
+IMPORTANT: look up the CURRENT API of the workmanager and connectivity_plus packages (the installed versions) from their documentation or source before using them. Do not rely on memory of older APIs. Tell me which API surface you used.
+
+1. Sync engine (domain/ and data/, pure Dart where possible)
+- SyncEngine with one public method: Future<SyncPassResult> runPass(). One pass: recover interrupted uploads, load uploadable images (respecting nextRetryAt), upload them one at a time (or with a small configurable concurrency, default 1, justify), record each result through RecordUploadResult, and stop early if connectivity is lost or a pause flag is set. Return a summary (uploaded, failed, retrying, remaining, nextRetryAt of the soonest item).
+- CLAIMING: two isolates (app and background worker) can run a pass at the same time. Make claiming atomic at the database level (for example UPDATE ... SET status='uploading', claimedAt=now WHERE id=? AND status IN (...) and check the affected row count) so an image is never uploaded twice. Add a claim timeout so a claim abandoned by a killed process is released by RecoverInterruptedUploads. Update the schema with a proper migration if needed.
+- Failure handling:
+  - NoInternetFailure: mark waitingForConnection WITHOUT consuming a retry attempt, and end the pass.
+  - LowBandwidthFailure and retryable ServerFailure: mark retrying, increment attempts, schedule nextRetryAt with backoff.
+  - Non-retryable failures: mark failed with lastError.
+  - FileMissingFailure: mark failed, never retry.
+- Progress: expose a Stream of SyncProgress events (imageId, fraction, bytes) from the engine for the foreground UI. Background runs just persist state.
+- A persisted "paused" flag (store it in the database or a small key-value table so both isolates see it). When paused, runPass returns immediately.
+
+2. Connectivity and "stable connection"
+- ConnectivityMonitor interface plus an implementation built on connectivity_plus. Expose Stream<LinkQuality> with values: offline, unstable, stable. connectivity_plus only reports the network interface, not real internet access, so define "stable" properly: connected for a continuous debounce period (constant, e.g. 3 seconds) AND a lightweight reachability probe succeeds with latency under a threshold. The probe must be an interface (ReachabilityProbe) with a MockReachabilityProbe driven by the same MockUploadConfig as the mock API (so airplane mode and the mock failure modes behave consistently), and a commented-out real implementation sketch. Do not hit any real URL.
+- Handle flapping connectivity (debounce and cancel in-flight stable checks when the link drops). Handle the connectivity_plus result being a list of results in current versions.
+- The monitor must work in both isolates.
+
+3. Background scheduling (background/)
+- Abstract the plugin behind SyncScheduler (interface) with a WorkmanagerSyncScheduler implementation, so the rest of the code and the tests do not depend on the plugin.
+- Tasks:
+  a) A unique ONE-OFF task "snapsync.sync.now" with constraint NetworkType.connected and exponential backoff (the plugin's own backoff policy), enqueued with a replace or keep policy chosen deliberately (explain which and why) whenever: a batch is submitted, an upload fails with a retryable failure, or connectivity returns while the app is in the foreground.
+  b) A unique PERIODIC safety-net task "snapsync.sync.periodic" at the platform minimum frequency (15 minutes) with the connected constraint, registered once at startup.
+- The top-level callbackDispatcher (already in background/, annotated @pragma('vm:entry-point')) must: ensure bindings are initialised, set up DI via the shared function (no main-isolate state), run SyncEngine.runPass(), and return a bool that tells Workmanager whether to retry (true when retryable work remains or the pass was interrupted by connectivity loss, false when there is nothing left). Wrap everything in try/catch so an exception never kills the isolate silently: log it and return true for transient errors.
+- A debug-only hook (guarded by kDebugMode) to trigger an immediate one-off background run, for testing.
+- Document in comments the platform limits that matter: the 15-minute minimum for periodic work, battery optimisation and doze effects, and that background timing is not guaranteed. Mention these in the final summary so I can put them in the README honestly.
+
+4. SyncCubit (presentation/upload_manager/)
+- State (Equatable): list of UploadItemViewModel (image id, display name, thumbnail path, size, status, progress, attempt text such as "Retrying... (attempt 2/3)", last error), submitted batches summary, overall progress (uploaded bytes over total bytes of the queue), link quality, isPaused, isSyncing, and a one-off message channel for snackbars (via a field consumed once or a separate stream).
+- Behaviour:
+  - Listens to BatchRepository.watchSubmittedBatches(), the engine's progress stream and the ConnectivityMonitor.
+  - When the link becomes stable and there is uploadable work, runs a foreground pass immediately and schedules a background one-off as a fallback.
+  - When the link goes offline, items show waitingForConnection; nothing is lost.
+  - Calls repository.refresh() when the app resumes (WidgetsBindingObserver wired in the presentation layer, not inside the cubit) and on a light timer while the Upload Manager is visible, so changes made by the background isolate appear.
+  - Public methods: retryItem(id), retryAllFailed(), pauseAll(), resumeAll(), removeItem(id), startSyncNow().
+  - Cancel all subscriptions and timers in close().
+- BatchCubit (presentation/batch/): holds the current open batch, its image count, capture and delete actions, and submitBatch() which calls SubmitBatch and then asks the scheduler to enqueue a one-off sync. Keep it small.
+
+5. Tests (flutter_test, bloc_test, mocktail; fake clocks, seeded randoms)
+- SyncEngine: all-success pass; NoInternet ends the pass without consuming an attempt; LowBandwidth schedules a retry with backoff; max retries lead to failed; non-retryable failure leads to failed; FileMissing leads to failed; pause stops the pass; early stop on connectivity loss; two engines running concurrently never upload the same image twice (use a shared test database and a mock API that records calls).
+- Claim timeout releases abandoned claims.
+- ConnectivityMonitor: stable only after the debounce plus a successful probe, flapping resets, offline emits immediately.
+- SyncCubit via bloc_test: queue shows waitingForConnection when offline; link becoming stable triggers a pass and the items move to uploaded; failures show retry text; pauseAll and resumeAll; retryAllFailed; refresh on resume picks up changes written by another connection to the same database.
+- BatchCubit: submitBatch calls the use case and enqueues the scheduler once.
+- WorkmanagerSyncScheduler must be tested only through its interface with a fake, plus a small test that the task names and constraints are built as intended if the plugin API allows it.
+
+6. Verification
+- Run flutter analyze (must be clean), flutter test and flutter build apk --debug. Fix failures properly, do not weaken tests.
+- Finish with a summary: the API versions you used, the sync flow in a short numbered list, the claim mechanism, the platform limits, assumptions, and a manual device test checklist covering: (1) submit a batch in airplane mode, items stay queued as "waiting for connection"; (2) turn airplane mode off, upload resumes with no user action while the app is open; (3) same test with the app in the background; (4) same test after swiping the app away from recents; (5) force-stop during an upload and confirm recovery; (6) mock mode alwaysLowBandwidth shows retrying with increasing delays; (7) pause and resume.
+
+Rules: no secrets or real URLs in code; handle every failure explicitly instead of swallowing exceptions; no logging of file paths beyond debug builds; keep functions small; ask me before adding any dependency.
+```

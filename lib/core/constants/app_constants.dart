@@ -7,7 +7,7 @@ abstract final class AppConstants {
 
   // Local storage
   static const String databaseName = 'snapsync.db';
-  static const int databaseVersion = 1;
+  static const int databaseVersion = 2;
   static const String imageDirectoryName = 'batches';
 
   // Upload retries
@@ -27,21 +27,43 @@ abstract final class AppConstants {
   /// Random spread applied to each delay: 0.2 means +/-20 percent.
   static const double backoffJitterRatio = 0.2;
 
-  /// An image still marked `uploading` for longer than this is assumed to
-  /// belong to a killed process and is put back in the queue. Must exceed the
-  /// longest legitimate upload, otherwise a live upload could be requeued.
-  static const Duration interruptedUploadTimeout = Duration(minutes: 10);
+  // Upload claims
+  /// A claim (an image set to `uploading`) that has not been renewed for this
+  /// long is assumed to belong to a killed process and is released by
+  /// RecoverInterruptedUploads. Must comfortably exceed
+  /// [uploadClaimRenewInterval].
+  static const Duration uploadClaimTimeout = Duration(minutes: 5);
+
+  /// How often a running upload refreshes its claim.
+  static const Duration uploadClaimRenewInterval = Duration(seconds: 30);
+
+  /// Images uploaded at the same time by one engine. 1 is deliberate: on a weak
+  /// link, finishing one file at a time beats spreading bandwidth over several
+  /// that all stall, progress is easier to read, and failures stay isolated.
+  static const int syncConcurrency = 1;
 
   // Stable-connection check
-  // A connection counts as stable when [stableProbeCount] consecutive probes
-  // succeed, [stableProbeInterval] apart, each within [stableProbeTimeout].
-  static const int stableProbeCount = 3;
-  static const Duration stableProbeInterval = Duration(seconds: 2);
-  static const Duration stableProbeTimeout = Duration(seconds: 5);
+  // A link is stable when the network interface has been up without a break
+  // for [stableDebounce] AND a lightweight reachability probe then succeeds
+  // within [probeMaxLatency].
+  static const Duration stableDebounce = Duration(seconds: 3);
+  static const Duration probeTimeout = Duration(seconds: 5);
+  static const Duration probeMaxLatency = Duration(seconds: 2);
+
+  /// While stable, the probe is repeated this often to notice a degrading link.
+  static const Duration linkRecheckInterval = Duration(seconds: 15);
+
+  /// While connected but not yet stable, the probe is repeated this often.
+  static const Duration unstableRecheckInterval = Duration(seconds: 5);
 
   // Background work
   /// Android enforces a minimum periodic interval of 15 minutes.
   static const Duration periodicSyncInterval = Duration(minutes: 15);
+
+  // Upload Manager
+  /// How often the Upload Manager re-reads the database while visible, to pick
+  /// up changes made by the background isolate.
+  static const Duration uploadManagerRefreshInterval = Duration(seconds: 3);
 
   // Mock upload API
   static const MockUploadMode mockUploadDefaultMode =
@@ -54,4 +76,9 @@ abstract final class AppConstants {
 
   /// Number of progress callbacks emitted over one simulated upload.
   static const int mockProgressSteps = 10;
+
+  /// Time the mock reachability probe takes, and the latency it reports.
+  static const Duration mockProbeDelay = Duration(milliseconds: 50);
+  static const Duration mockFastProbeLatency = Duration(milliseconds: 80);
+  static const Duration mockSlowProbeLatency = Duration(seconds: 5);
 }

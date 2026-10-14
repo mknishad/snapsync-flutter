@@ -30,3 +30,17 @@ Future<void> eventually(
 
 Directory createTempDir(String prefix) =>
     Directory.systemTemp.createTempSync(prefix);
+
+/// Like [eventually] for a condition that has to read from the database.
+Future<void> eventuallyAsync(
+  Future<bool> Function() condition, {
+  Duration timeout = const Duration(seconds: 5),
+}) async {
+  final deadline = DateTime.now().add(timeout);
+  while (!await condition()) {
+    if (DateTime.now().isAfter(deadline)) {
+      throw TimeoutException('Condition not met within $timeout');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+  }
+}
