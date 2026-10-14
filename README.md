@@ -161,7 +161,7 @@ SnapSync was built with Claude Code (Anthropic) in five sequential build prompts
 
 Automated checks run at the final step: `flutter analyze` (no issues), `flutter test` (all passing) and `flutter build apk --release`. These do not replace testing on a device.
 
-I guided the architecture and design decisions. Ran and tested the app on Pixel 5a and Pixel 8 and verified the UI and functionalities are performing as expected.
+I guided the architecture and design decisions, reviewed the generated code, ran and tested the app on Pixel 5a and Pixel 8 and verified the UI and functionalities are performing as expected.
 
 ### Essential prompts
 
