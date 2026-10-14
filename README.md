@@ -209,7 +209,7 @@ The output is `build/app/outputs/flutter-apk/app-release.apk`. Code shrinking (R
 
 For smaller downloads, `flutter build apk --release --split-per-abi` produces one APK per CPU architecture. The single universal APK is the deliverable.
 
-Release APK: https://drive.google.com/file/d/182Pl1pkU36GV0P5w9Cf4deH7I8qftJcJ/view?usp=share_link
+Release APK: [snapsync-release.apk]([https://drive.google.com/file/d/182Pl1pkU36GV0P5w9Cf4deH7I8qftJcJ/view?usp=share_link](https://drive.google.com/file/d/1KuBoPxBZjAct5maE-Oa4lhKcTNjYsWM3/view?usp=share_link))
 
 ### Run the tests
 

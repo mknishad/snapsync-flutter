@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Adaptive icon. The artwork fills the whole 108 dp canvas as the background,
+     and the same artwork, inset by 15 percent, is the foreground. The inset keeps
+     the logo inside the area that circular and squircle masks leave visible. -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@drawable/ic_launcher_art" />
+    <foreground>
+        <inset
+            android:drawable="@drawable/ic_launcher_art"
+            android:inset="15%" />
+    </foreground>
+</adaptive-icon>
